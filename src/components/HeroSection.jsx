@@ -42,13 +42,15 @@ function HeroSection() {
             className="w-full h-[470px] rounded-[16px] object-cover mx-auto md:w-[386px] md:h-[529px]"
           />
           
-          <div className="md:flex md:flex-col md:justify-center">
+          <div className="md:flex md:flex-col md:justify-center gap-4">
+            <div>
             <h1 className="text-body-2 text-brown-400 leading-relaxed font-sans font-weight-headline">
               -Author
             </h1>
             <p className="text-headline-3 text-brown-500 max-w-2xl font-weight-body leading-relaxed font-sans">
               Thompson P.
             </p>
+            </div>
             <div className="flex flex-col gap-4">
               <p className="text-body-1 text-brown-400 max-w-2xl font-weight-body leading-relaxed font-sans">
                 I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness.
