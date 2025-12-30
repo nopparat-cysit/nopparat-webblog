@@ -3,7 +3,7 @@ import Button from "../common/Button";
 
 function NavBar() {
   return (
-    <header className="w-full h-12 border-b border-b-brown-300 flex items-center justify-between px-4 md:h-20 md:px-32">
+    <header className="sticky top-0 z-50 w-full h-12 border-b border-b-brown-300 flex items-center justify-between px-4 bg-white/90 backdrop-blur md:h-20 md:px-32">
       <svg
         className="h-8 w-8 md:h-11 md:w-11"
         xmlns="http://www.w3.org/2000/svg"
