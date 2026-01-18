@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import {
   Tabs,
@@ -17,10 +18,46 @@ import {
 import { Input } from "@/components/ui/input";
 import BlogCard from "./BlogCard";
 import { blogPosts } from "@/data/blogPosts";
+import axios from "axios";
 
 function ArticleSection() {
-  const [selectedCategory, setSelectedCategory] = React.useState("highlight");
-  const categories = ["Highlight", "Cat", "Inspiration", "General"];
+
+  const [blogData,setBlogData] = useState([])
+
+  const [selectedCategory, setSelectedCategory] = useState("highlight");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCheck,setfilterCheck] = useState(false)
+
+  const getData = async () => {
+    const response = await axios.get("https://blog-post-project-api.vercel.app/posts");
+    console.log(response.data.posts);
+    setfilterCheck(true)
+    setBlogData(response.data.posts);
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+  console.log(blogData);
+  const dataCategories = blogData.map((n) => n.category)
+  const categories = ["Highlight", ...new Set(dataCategories)];
+  console.log(categories);
+  
+  const matchesCategory = (post) =>
+    selectedCategory === "highlight"
+      ? true
+      : (post.category || "").toLowerCase() === selectedCategory;
+
+  const matchesSearch = (post, term) =>
+
+    (post.title || "").toLowerCase().includes(term) ||
+    (post.description || "").toLowerCase().includes(term) ||
+    (post.author || "").toLowerCase().includes(term);
+
+  const filteredPosts = (() => {
+    const term = searchTerm.trim().toLowerCase();
+    return blogData.filter((post) => matchesCategory(post) && matchesSearch(post, term));
+  })();
 
   return (
     <section className="w-full px-4 py-12 md:px-32 md:py-20 font-sans">
@@ -39,6 +76,8 @@ function ArticleSection() {
               <input
                 type="search"
                 placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-white border border-brown-100 rounded-[12px] pl-4 pr-12 py-3 text-brown-400 font-sans font-weight-body text-body-1 leading-6 focus:outline-none focus:ring-2 focus:ring-brown-300 transition placeholder:text-brown-400 placeholder:font-weight-body placeholder:text-body-1 placeholder:leading-6"
                 style={{
                   fontFamily: "var(--font-family-sans)",
@@ -58,7 +97,7 @@ function ArticleSection() {
                 Category
               </label>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
+                <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
                   style={{
                     fontFamily: "var(--font-family-sans)",
                     fontWeight: "var(--font-weight-body)",
@@ -68,12 +107,12 @@ function ArticleSection() {
                     boxShadow: "0 1px 4px 0 rgba(38, 35, 30, 0.04)"
                   }}
                 >
-                  <SelectValue 
-                    placeholder="Select category" 
-                    className="text-brown-400"
+                  <SelectValue
+                    placeholder="Select category"
+                    className="text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400"
                   />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectGroup>
                     <SelectLabel>Categories</SelectLabel>
                     {categories.map((category) => (
@@ -116,6 +155,8 @@ function ArticleSection() {
               <input
                 type="search"
                 placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-white border border-brown-100 rounded-[16px] pl-4 pr-12 py-3 text-brown-400 font-sans font-weight-body text-body-1 leading-6 focus:outline-none focus:ring-2 focus:ring-brown-300 transition placeholder:text-brown-400 placeholder:font-weight-body placeholder:text-body-1 placeholder:leading-6"
                 style={{
                   fontFamily: "var(--font-family-sans)",
@@ -133,7 +174,7 @@ function ArticleSection() {
 
         {/* Articles Grid - Responsive: 1 column on mobile, 2 columns on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {blogPosts.map((post, index) => (
+          {filteredPosts.map((post, index) => (
             <div
               key={post.id}
               className="animate-in fade-in slide-in-from-bottom-4"
@@ -152,6 +193,16 @@ function ArticleSection() {
               />
             </div>
           ))}
+          {filterCheck && filteredPosts.length === 0 && (
+            <div className="col-span-full text-center text-brown-400">
+              No articles match your filters.
+            </div>
+          )}
+          {!filterCheck && (
+            <div className="col-span-full text-center text-brown-400">
+              <h1>Loading...</h1>
+            </div>
+          )}
         </div>
       </div>
     </section>

@@ -6,7 +6,7 @@ function HeroSection() {
       <div className="max-w-6xl mx-auto">
         <div className="space-y-6 gap-4 md:gap-12 md:flex md:w-full md:items-center">
           
-          <div className="flex flex-col items-center text-center md:justify-center gap-4">
+          <div className="flex flex-col items-end text-center md:justify-center gap-4">
             <div className="flex flex-col items-center sm:items-end">
               <h1
                 className="text-headline-2 text-brown-600 font-sans font-weight-headline md:hidden"
