@@ -5,6 +5,16 @@ function BlogCard({ id, image, category, title, description, author, date }) {
   // Author avatar image
   const authorImage = "https://res.cloudinary.com/dcbpjtd1r/image/upload/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
 
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "";
+    const dateObj = new Date(isoDate);
+    return dateObj.toLocaleDateString("en-EN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Image Container */}
@@ -59,7 +69,7 @@ function BlogCard({ id, image, category, title, description, author, date }) {
           />
           <span className="font-medium">{author}</span>
           <span className="mx-2 text-gray-300">|</span>
-          <span>{date}</span>
+          <span>{formatDate(date)}</span>
         </div>
       </div>
     </div>
