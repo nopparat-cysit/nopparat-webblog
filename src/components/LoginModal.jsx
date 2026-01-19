@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { Link } from "react-router-dom";
 
 function LoginModal({ isOpen, onClose }) {
   if (!isOpen) return null;
@@ -20,17 +21,20 @@ function LoginModal({ isOpen, onClose }) {
             Create an account to continue
           </h2>
 
-          {/* Login Button */}
-          <button className="w-full py-3 bg-brown-600 text-white rounded-full text-body-1 font-medium hover:bg-brown-500 transition-all duration-300 mb-3">
+          {/* Create Account Button */}
+          <Link
+            to="/signup"
+            className="block w-full py-3 bg-brown-600 text-white rounded-full text-body-1 font-medium hover:bg-brown-500 transition-all duration-300 mb-3"
+          >
             Create account
-          </button>
+          </Link>
 
-          {/* Sign Up Link */}
+          {/* Login Link */}
           <p className="text-body-2 text-brown-400">
             Already have an account?{" "}
-            <a href="#" className="text-brand-green font-medium hover:underline">
+            <Link to="/login" className="text-brand-green font-medium hover:underline">
               Log in
-            </a>
+            </Link>
           </p>
         </div>
       </div>

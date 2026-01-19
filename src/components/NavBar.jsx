@@ -43,8 +43,8 @@ function NavBar() {
 
       {/* Desktop buttons */}
       <div className="hidden md:flex items-center gap-3">
-        <Button variant="secondary">Log in</Button>
-        <Button>Sign up</Button>
+        <Button variant="secondary" onClick={() => navigate("/login")}>Log in</Button>
+        <Button onClick={() => navigate("/signup")}>Sign up</Button>
       </div>
 
       {/* Mobile menu icon: only on mobile */}
@@ -61,8 +61,14 @@ function NavBar() {
       {/* Example mobile menu (optional): */}
       {listToggle && (
         <div className="absolute right-[0.5px] top-12 p-6 bg-white/95 w-full shadow-lg flex flex-col gap-4 md:hidden">
-          <Button variant="secondary">Log in</Button>
-          <Button >Sign up</Button>
+          <Button variant="secondary" onClick={() => {
+            navigate("/login");
+            setListToggle(false);
+          }}>Log in</Button>
+          <Button onClick={() => {
+            navigate("/signup");
+            setListToggle(false);
+          }}>Sign up</Button>
         </div>
       )}
     </header>
