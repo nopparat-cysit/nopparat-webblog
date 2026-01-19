@@ -165,6 +165,7 @@ function ArticleSection() {
                   lineHeight: "1.5rem",
                   letterSpacing: "0",
                   boxShadow: "0 1px 4px 0 rgba(38, 35, 30, 0.04)"
+                  
                 }}
               />
               <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-brown-500 pointer-events-none" />
@@ -184,6 +185,7 @@ function ArticleSection() {
               }}
             >
               <BlogCard
+                id={post.id}
                 image={post.image}
                 category={post.category}
                 title={post.title}

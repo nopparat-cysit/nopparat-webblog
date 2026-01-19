@@ -1,19 +1,23 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 
-function BlogCard({ image, category, title, description, author, date }) {
+function BlogCard({ id, image, category, title, description, author, date }) {
   // Author avatar image
   const authorImage = "https://res.cloudinary.com/dcbpjtd1r/image/upload/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
 
   return (
     <div className="flex flex-col gap-4">
       {/* Image Container */}
-      <a href="#" className="relative h-[212px] sm:h-[360px] overflow-hidden rounded-[16px]">
+      <Link
+        to={`/posts/${id}`}
+        className="relative h-[212px] sm:h-[360px] overflow-hidden rounded-[16px]"
+      >
         <img
           className="w-full h-full object-cover"
           src={image}
           alt={title}
         />
-      </a>
+      </Link>
 
       {/* Content Section */}
       <div className="flex flex-col">
@@ -31,11 +35,15 @@ function BlogCard({ image, category, title, description, author, date }) {
         </div>
 
         {/* Title */}
-        <a href="#" className="block">
+        <Link
+          to={`/posts/${id}`}
+
+          className="block"
+        >
           <h2 className="text-start font-headline text-headline-4 mb-2 line-clamp-2 text-brown-600 hover:underline">
             {title}
           </h2>
-        </a>
+        </Link>
 
         {/* Description */}
         <p className="text-brown-400 text-body-2 mb-4 grow line-clamp-3">

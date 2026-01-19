@@ -1,18 +1,14 @@
 import './App.css'
-import NavBar from "./components/NavBar";
-import HeroSection from "./components/HeroSection";
-import ArticleSection from "./components/ArticleSection";
-import { Footer } from "./components/Footer";
-
+import { Routes, Route } from "react-router-dom";
+import LandingPage from "./page/landingpage";
+import ArticleDetail from "./page/ArticleDetail";
 
 function App() {
   return (
-    <div className="min-h-screen bg-white">
-      <NavBar/>
-      <HeroSection/>
-      <ArticleSection/>
-      <Footer/>
-    </div>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/posts/:id" element={<ArticleDetail />} />
+    </Routes>
   )
 }
 

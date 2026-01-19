@@ -1,10 +1,18 @@
 import { FiMenu } from "react-icons/fi";
 import Button from "../common/Button";
+import { useNavigate } from "react-router-dom";
 
 function NavBar() {
+  const navigate = useNavigate()
   return (
     <header className="sticky top-0 z-50 w-full h-12 border-b border-b-brown-300 flex items-center justify-between px-4 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300 md:h-20 md:px-32 hover:bg-white/100 hover:shadow-md">
-      <a href="#" className="group">
+      <button
+        type="button"
+        className="group"
+        onClick={() => navigate("/")}
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+        aria-label="Go to homepage"
+      >
         <svg
           className="h-8 w-8 md:h-11 md:w-11 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
           xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +35,7 @@ function NavBar() {
             fill="#12B379" 
           />
         </svg>
-      </a>
+      </button>
 
       {/* Desktop buttons */}
       <div className="hidden md:flex items-center gap-3">
