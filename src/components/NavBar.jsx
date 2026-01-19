@@ -1,9 +1,13 @@
 import { FiMenu } from "react-icons/fi";
 import Button from "../common/Button";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 function NavBar() {
+  const [listToggle , setListToggle] = useState(false)
   const navigate = useNavigate()
+  console.log(listToggle);
+  
   return (
     <header className="sticky top-0 z-50 w-full h-12 border-b border-b-brown-300 flex items-center justify-between px-4 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300 md:h-20 md:px-32 hover:bg-white/100 hover:shadow-md">
       <button
@@ -43,10 +47,24 @@ function NavBar() {
         <Button>Sign up</Button>
       </div>
 
-      {/* Mobile menu icon */}
-      <button className="block md:hidden p-2 rounded-lg transition-all duration-300 hover:bg-brown-100 active:scale-95">
-        <FiMenu className="w-6 h-6 transition-transform duration-300 hover:rotate-90" />
-      </button>
+      {/* Mobile menu icon: only on mobile */}
+      <div className="flex md:hidden items-center">
+        <button
+          type="button"
+          onClick={() => setListToggle(!listToggle)}
+  
+          
+        >
+          <FiMenu className="w-6 h-6 transition-transform duration-300 hover:rotate-90" />
+        </button>
+      </div>
+      {/* Example mobile menu (optional): */}
+      {listToggle && (
+        <div className="absolute right-[0.5px] top-12 p-6 bg-white/95 w-full shadow-lg flex flex-col gap-4 md:hidden">
+          <Button variant="secondary">Log in</Button>
+          <Button>Sign up</Button>
+        </div>
+      )}
     </header>
   );
 }

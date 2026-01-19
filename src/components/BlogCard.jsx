@@ -1,19 +1,10 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
+import { formatDate } from "../lib/utils";
 
 function BlogCard({ id, image, category, title, description, author, date }) {
   // Author avatar image
   const authorImage = "https://res.cloudinary.com/dcbpjtd1r/image/upload/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
-
-  const formatDate = (isoDate) => {
-    if (!isoDate) return "";
-    const dateObj = new Date(isoDate);
-    return dateObj.toLocaleDateString("en-EN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
 
   return (
     <div className="flex flex-col gap-4">

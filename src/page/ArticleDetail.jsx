@@ -3,8 +3,12 @@ import NavBar from "../components/NavBar";
 import { Footer } from "../components/Footer";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { Heart, Copy, Facebook, Linkedin, Twitter, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { formatDate } from "../lib/utils";
+import LoginModal from "../components/LoginModal";
+import AuthorSidebar from "../components/AuthorSidebar";
+import LikeShareSection from "../components/LikeShareSection";
+import CommentSection from "../components/CommentSection";
 
 function ArticleDetail() {
   const pageId = useParams();
@@ -14,18 +18,6 @@ function ArticleDetail() {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  console.log(articleDetail);
-
-  const formatDate = (isoDate) => {
-    if (!isoDate) return "";
-    const date = new Date(isoDate);
-    return date.toLocaleDateString("en-EN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
-  
 
   const getData = async () => {
     const response = await axios.get(
@@ -134,125 +126,28 @@ function ArticleDetail() {
               </div>
 
               {/* Author Sidebar - Desktop Only */}
-              <div className="hidden md:block w-[280px] shrink-0">
-                <div className="bg-brown-100 rounded-[16px] p-6 sticky top-24">
-                  <p className="text-body-2 text-brown-400 mb-3">Author</p>
-                  <div className="flex items-center gap-3 mb-4">
-                    <img
-                      src={authorImage}
-                      alt={articleDetail.author}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <h3 className="text-body-1 text-brown-600 font-semibold">
-                      {articleDetail.author}
-                    </h3>
-                  </div>
-                  <p className="text-body-2 text-brown-400 leading-relaxed">
-                    I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness.
-                  </p>
-                  <p className="text-body-2 text-brown-400 leading-relaxed mt-4">
-                    When I'm not writing, I spends time volunteering at my local animal shelter, helping cats find loving homes.
-                  </p>
-                </div>
-              </div>
+              <AuthorSidebar 
+                author={articleDetail.author} 
+                authorImage={authorImage} 
+              />
             </div>
 
             {/* Like & Share Section */}
-            <div className="flex items-center justify-between gap-4 mt-8 md:mt-12 pt-6 md:pt-8 border-t border-brown-300">
-              {/* Like & Copy Link Buttons */}
-              <div className="flex items-center gap-2 md:gap-4">
-                {/* Like Button */}
-                <button
-                  onClick={handleLike}
-                  className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-full border transition-all duration-300 ${
-                    isLiked
-                      ? "border-brand-green bg-brand-green-soft text-brand-green"
-                      : "border-brown-300 bg-white text-brown-500 hover:border-brown-400"
-                  }`}
-                >
-                  <Heart
-                    className={`w-4 h-4 md:w-5 md:h-5 ${isLiked ? "fill-current" : ""}`}
-                  />
-                  <span className="text-body-2 md:text-body-1 font-medium">{likes}</span>
-                </button>
-
-                {/* Copy Link Button */}
-                <button
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-full border border-brown-300 bg-white text-brown-500 hover:border-brown-400 transition-all duration-300"
-                >
-                  <Copy className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="text-body-2 md:text-body-1 font-medium">Copy link</span>
-                </button>
-              </div>
-
-              {/* Social Share */}
-              <div className="flex items-center gap-2 md:gap-3">
-                <button className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-brown-600 text-white flex items-center justify-center hover:bg-brown-500 transition-all duration-300">
-                  <Facebook className="w-4 h-4 md:w-5 md:h-5" />
-                </button>
-                <button className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-brown-600 text-white flex items-center justify-center hover:bg-brown-500 transition-all duration-300">
-                  <Linkedin className="w-4 h-4 md:w-5 md:h-5" />
-                </button>
-                <button className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-brown-600 text-white flex items-center justify-center hover:bg-brown-500 transition-all duration-300">
-                  <Twitter className="w-4 h-4 md:w-5 md:h-5" />
-                </button>
-              </div>
-            </div>
+            <LikeShareSection
+              likes={likes}
+              isLiked={isLiked}
+              onLike={handleLike}
+              onCopyLink={handleCopyLink}
+            />
 
             {/* Comments Section */}
-            <div className="mt-8 md:mt-12">
-              <h3 className="text-body-1 md:text-headline-4 text-brown-600 font-semibold mb-4 md:mb-6">
-                Comment
-              </h3>
-
-              {/* Comment Input */}
-              <div className="mb-6 md:mb-8">
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  onFocus={handleCommentFocus}
-                  placeholder="What are your thoughts?"
-                  className="w-full p-3 md:p-4 border border-brown-300 rounded-[16px] text-body-2 md:text-body-1 text-brown-500 placeholder:text-brown-400 resize-none focus:outline-none focus:ring-2 focus:ring-brown-400 transition-all duration-300"
-                  rows={3}
-                />
-                <div className="flex justify-center mt-4">
-                  <button
-                    onClick={handleSendComment}
-                    className="px-6 py-2 bg-brown-600 text-white rounded-full text-body-2 md:text-body-1 font-medium hover:bg-brown-500 transition-all duration-300"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-
-              {/* Comments List */}
-              <div className="space-y-4 md:space-y-6">
-                {comments.map((c) => (
-                  <div
-                    key={c.id}
-                    className="border-b border-brown-200 pb-4 md:pb-6 last:border-b-0"
-                  >
-                    <div className="flex items-center gap-3 mb-2 md:mb-3">
-                      <img
-                        src={c.avatar}
-                        alt={c.author}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <h4 className="text-body-2 md:text-body-1 text-brown-600 font-semibold">
-                          {c.author}
-                        </h4>
-                        <p className="text-xs md:text-body-2 text-brown-400">{c.date}</p>
-                      </div>
-                    </div>
-                    <p className="text-body-2 md:text-body-1 text-brown-500 leading-relaxed">
-                      {c.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CommentSection
+              comments={comments}
+              comment={comment}
+              onCommentChange={setComment}
+              onCommentFocus={handleCommentFocus}
+              onSendComment={handleSendComment}
+            />
           </div>
         </section>
       </main>
@@ -260,40 +155,10 @@ function ArticleDetail() {
       <Footer />
 
       {/* Login Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-[16px] p-6 md:p-8 w-[90%] max-w-[400px] relative">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-brown-400 hover:text-brown-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Modal Content */}
-            <div className="text-center">
-              <h2 className="text-headline-4 text-brown-600 font-semibold mb-2">
-                Create an account to continue
-              </h2>
-              
-
-              {/* Login Button */}
-              <button className="w-full py-3 bg-brown-600 text-white rounded-full text-body-1 font-medium hover:bg-brown-500 transition-all duration-300 mb-3">
-                Create account
-              </button>
-
-              {/* Sign Up Link */}
-              <p className="text-body-2 text-brown-400">
-                  Already have an account?{" "}
-                <a href="#" className="text-brand-green font-medium hover:underline">
-                  Log in
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <LoginModal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+      />
     </div>
   );
 }
