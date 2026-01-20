@@ -22,42 +22,90 @@ import axios from "axios";
 
 function ArticleSection() {
 
-  const [blogData,setBlogData] = useState([])
+  const [blogData, setBlogData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState("highlight");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCheck,setfilterCheck] = useState(false)
+  const [filterCheck, setfilterCheck] = useState(false);
 
-  const getData = async () => {
-    const response = await axios.get("https://blog-post-project-api.vercel.app/posts");
-    console.log(response.data.posts);
-    setfilterCheck(true)
-    setBlogData(response.data.posts);
-  };
-
+  // รีเซ็ตโพสต์เมื่อเปลี่ยน category
   useEffect(() => {
-    getData();
-  }, []);
+    setBlogData([]);
+    setPage(1);
+    setHasMore(true);
+    setfilterCheck(false);
+  }, [selectedCategory]);
+
+  // โหลดข้อมูลเมื่อ page หรือ selectedCategory เปลี่ยน
+  useEffect(() => {
+    // ป้องกันการโหลดซ้ำถ้ายังโหลดไม่เสร็จ
+    if (isLoading) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const categoryParam = selectedCategory === "highlight" ? "" : selectedCategory;
+
+        const response = await axios.get("https://blog-post-project-api.vercel.app/posts", {
+          params: {
+            page: page,
+            limit: 6,
+            category: categoryParam,
+          },
+        });
+
+        if (page === 1) {
+          // แทนที่โพสต์เดิม
+          setBlogData(response.data.posts);
+        } else {
+          // รวมโพสต์ใหม่กับโพสต์เดิม
+          setBlogData((prevPosts) => [...prevPosts, ...response.data.posts]);
+        }
+
+        // ตรวจสอบว่าถึงหน้าสุดท้ายหรือยัง
+        if (response.data.currentPage >= response.data.totalPages) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+
+        setfilterCheck(true);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        setfilterCheck(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, selectedCategory]);
   console.log(blogData);
   const dataCategories = blogData.map((n) => n.category)
   const categories = ["Highlight", ...new Set(dataCategories)];
   console.log(categories);
   
-  const matchesCategory = (post) =>
-    selectedCategory === "highlight"
-      ? true
-      : (post.category || "").toLowerCase() === selectedCategory;
-
   const matchesSearch = (post, term) =>
-
     (post.title || "").toLowerCase().includes(term) ||
     (post.description || "").toLowerCase().includes(term) ||
     (post.author || "").toLowerCase().includes(term);
 
   const filteredPosts = (() => {
     const term = searchTerm.trim().toLowerCase();
-    return blogData.filter((post) => matchesCategory(post) && matchesSearch(post, term));
+    if (!term) {
+      return blogData;
+    }
+    return blogData.filter((post) => matchesSearch(post, term));
   })();
+
+  // ฟังก์ชันเพิ่มหน้า
+  const handleLoadMore = () => {
+    setPage((prevPage) => prevPage + 1);
+  };
 
   return (
     <section className="w-full px-4 py-12 md:px-32 md:py-20 font-sans">
@@ -206,6 +254,19 @@ function ArticleSection() {
             </div>
           )}
         </div>
+
+        {/* View More Button */}
+        {hasMore && filterCheck && (
+          <div className="text-center mt-8">
+            <button
+              onClick={handleLoadMore}
+              className="hover:text-brown-500 font-medium underline text-brown-400 transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading..." : "View more"}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

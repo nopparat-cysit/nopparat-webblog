@@ -62,7 +62,7 @@ function NavBar() {
       {listToggle && (
         <div className="absolute right-[0.5px] top-12 p-6 bg-white/95 w-full shadow-lg flex flex-col gap-4 md:hidden">
           <Button variant="secondary">Log in</Button>
-          <Button>Sign up</Button>
+          <Button >Sign up</Button>
         </div>
       )}
     </header>

@@ -1,4 +1,4 @@
-import { Heart, Copy, Facebook, Linkedin, Twitter } from "lucide-react";
+import { SmilePlus, Copy, Facebook, Linkedin, Twitter } from "lucide-react";
 
 function LikeShareSection({ likes, isLiked, onLike, onCopyLink }) {
   return (
@@ -14,7 +14,7 @@ function LikeShareSection({ likes, isLiked, onLike, onCopyLink }) {
               : "border-brown-300 bg-white text-brown-500 hover:border-brown-400"
           }`}
         >
-          <Heart
+          <SmilePlus
             className={`w-4 h-4 md:w-5 md:h-5 ${isLiked ? "fill-current" : ""}`}
           />
           <span className="text-body-2 md:text-body-1 font-medium">{likes}</span>
