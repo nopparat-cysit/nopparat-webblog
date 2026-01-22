@@ -179,7 +179,7 @@ function ArticleSection() {
               <label className="block text-body-2 text-brown-400 font-weight-body mb-2">
                 Category
               </label>
-              <Select value={selectedCategory} onValueChange={() => {setSelectedCategory , setSearchTerm('')}}>
+              <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSearchTerm(''); }}>
                 <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
                   style={{
                     fontFamily: "var(--font-family-sans)",
@@ -213,13 +213,13 @@ function ArticleSection() {
           <div className="hidden md:flex items-center justify-between w-full gap-4">
             {/* Category Tabs - Desktop */}
             <div className="flex items-center gap-2 rounded-[12px] bg-white p-2">
-              <Tabs defaultValue="highlight" value={selectedCategory} onValueChange={() => {setSelectedCategory , setSearchTerm('')}}>
+              <Tabs defaultValue="highlight" value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSearchTerm(''); }}>
                 <TabsList className="bg-transparent p-0 h-auto gap-2">
                   {categories.map((category) => (
                     <TabsTrigger
                       value={category.toLowerCase()}
                       key={category}
-                      onClick={() => setSelectedCategory(category.toLowerCase())}
+                      onClick={() => { setSelectedCategory(category.toLowerCase()); setSearchTerm(''); }}
                       className={
                         selectedCategory === category.toLowerCase()
                           ? "bg-brown-500 text-white font-semibold shadow-md rounded-[8px]"
