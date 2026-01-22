@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import {
   Tabs,
@@ -31,8 +31,10 @@ function ArticleSection() {
   const [totalPage , setTotalPage] = useState(0)
   const [isLoad,setIsLoad] = useState(false)
   const [dataCategory, setDataCategory] = useState([])
-  console.log(selectedCategory);  
-  console.log(dataCategory);
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [searchResults, setSearchResults] = useState([])
+  const [isFetchingContent, setIsFetchingContent] = useState(false)
+  console.log(searchResults);
   
   
   const getData = async () => {
@@ -42,15 +44,13 @@ function ArticleSection() {
      { params: {
         page: page,
         limit: 6,
-        category: selectedCategory === "highlight" ? "" : selectedCategory
+        category: selectedCategory === "highlight" ? "" : selectedCategory,
       }}
     );
     
-  
-    console.log(`page count :${response.data.totalPages}`);
     
     setfilterCheck(true)
-
+    
     if (page === 1) {
       setBlogData(response.data.posts);
     } else {
@@ -60,13 +60,24 @@ function ArticleSection() {
     setIsLoad(false)
   };
 
+  const getSearch = async() => {
+    setIsFetchingContent(true)
+    const catagoryData = await axios.get("https://blog-post-project-api.vercel.app/posts",
+      { params: {
+         keyword: searchTerm,
+         limit: 100
+       }})
+       
+
+       
+    setSearchResults(catagoryData.data.posts)
+    setIsFetchingContent(false)
+  }
+
   const getCategory = async() => {
-    const catagoryData = await axios.get('https://blog-post-project-api.vercel.app/posts')
+    const catagoryData = await axios.get("https://blog-post-project-api.vercel.app/posts")
     setDataCategory(catagoryData.data.posts)
   }
-  console.log(page);
-  console.log(totalPage);
-  console.log(blogData);
   
   
 
@@ -86,6 +97,10 @@ function ArticleSection() {
     getCategory();
   }, []);
 
+  useEffect(()=>{
+    getSearch()
+  },[searchTerm])
+
 
   const dataCategories = dataCategory.map((n) => n.category)
   const categories = ["Highlight", ...new Set(dataCategories)];
@@ -96,14 +111,17 @@ function ArticleSection() {
       : (post.category || "").toLowerCase() === selectedCategory;
 
   const matchesSearch = (post, term) =>
-
-    (post.title || "").toLowerCase().includes(term) ||
-    (post.description || "").toLowerCase().includes(term) ||
-    (post.author || "").toLowerCase().includes(term);
+    (post.title || "").toLowerCase().includes(term) 
 
   const filteredPosts = (() => {
+    return blogData.filter((post) => matchesCategory(post));
+  })();
+
+  // Filter searchResults based on searchTerm for dropdown
+  const filteredSearchResults = (() => {
     const term = searchTerm.trim().toLowerCase();
-    return blogData.filter((post) => matchesCategory(post) && matchesSearch(post, term));
+    if (!term) return [];
+    return searchResults.filter((post) => matchesSearch(post, term)).slice(0, 5);
   })();
 
   return (
@@ -119,15 +137,19 @@ function ArticleSection() {
           {/* Mobile Layout: Search on top, Category below */}
           <div className="block md:hidden w-full space-y-4">
             {/* Search Bar - Top (Mobile) */}
-            <div className="relative w-full" ref={searchContainerRef}>
+            <div className="relative w-full">
               <input
-                ref={searchInputRef}
                 type="search"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
+                onBlur={(e) => {
+                  // Delay to allow Link click to work
+                  setTimeout(() => {
+                    setIsSearchFocused(false);
+                  }, 200);
+                }}
                 className="w-full bg-white border border-brown-100 rounded-[12px] pl-4 pr-12 py-3 text-brown-400 font-sans font-weight-body text-body-1 leading-6 focus:outline-none focus:ring-2 focus:ring-brown-300 transition placeholder:text-brown-400 placeholder:font-weight-body placeholder:text-body-1 placeholder:leading-6"
                 style={{
                   fontFamily: "var(--font-family-sans)",
@@ -141,7 +163,7 @@ function ArticleSection() {
               <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-brown-400 pointer-events-none" />
               {isSearchFocused && (
                 <SearchDropdown
-                  posts={searchResults}
+                  posts={filteredSearchResults}
                   searchTerm={searchTerm}
                   isLoading={isFetchingContent}
                   onSelect={() => {
@@ -157,7 +179,7 @@ function ArticleSection() {
               <label className="block text-body-2 text-brown-400 font-weight-body mb-2">
                 Category
               </label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory} onValueChange={() => {setSelectedCategory , setSearchTerm('')}}>
                 <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
                   style={{
                     fontFamily: "var(--font-family-sans)",
@@ -191,7 +213,7 @@ function ArticleSection() {
           <div className="hidden md:flex items-center justify-between w-full gap-4">
             {/* Category Tabs - Desktop */}
             <div className="flex items-center gap-2 rounded-[12px] bg-white p-2">
-              <Tabs defaultValue="highlight" value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Tabs defaultValue="highlight" value={selectedCategory} onValueChange={() => {setSelectedCategory , setSearchTerm('')}}>
                 <TabsList className="bg-transparent p-0 h-auto gap-2">
                   {categories.map((category) => (
                     <TabsTrigger
@@ -212,15 +234,19 @@ function ArticleSection() {
             </div>
 
             {/* Search Bar - Right Side (Desktop) */}
-            <div className="relative flex-1 max-w-xs w-[360px]" ref={searchContainerRef}>
+            <div className="relative flex-1 max-w-xs w-[360px]">
               <input
-                ref={searchInputRef}
                 type="search"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
+                onBlur={(e) => {
+                  // Delay to allow Link click to work
+                  setTimeout(() => {
+                    setIsSearchFocused(false);
+                  }, 200);
+                }}
                 className="w-full bg-white border border-brown-100 rounded-[16px] pl-4 pr-12 py-3 text-brown-400 font-sans font-weight-body text-body-1 leading-6 focus:outline-none focus:ring-2 focus:ring-brown-300 transition placeholder:text-brown-400 placeholder:font-weight-body placeholder:text-body-1 placeholder:leading-6"
                 style={{
                   fontFamily: "var(--font-family-sans)",
@@ -235,7 +261,7 @@ function ArticleSection() {
               <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-brown-500 pointer-events-none" />
               {isSearchFocused && (
                 <SearchDropdown
-                  posts={searchResults}
+                  posts={filteredSearchResults}
                   searchTerm={searchTerm}
                   isLoading={isFetchingContent}
                   onSelect={() => {
@@ -270,7 +296,7 @@ function ArticleSection() {
               />
             </div>
           ))}
-          {page !== totalPage && page !== 0 && !isLoad ? (
+          {page !== totalPage && page !== 0 && !isLoad && filteredPosts.length !== 0 ? (
             <div className="col-span-full pt-10 text-center text-brown-400 text-body-1 underline"
             onClick={() => setPage((page) => page + 1)}>
               View More

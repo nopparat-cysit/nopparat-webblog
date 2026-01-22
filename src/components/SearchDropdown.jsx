@@ -1,6 +1,8 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function SearchDropdown({ posts, searchTerm, isLoading, onSelect }) {
+  const navigate = useNavigate();
+
   if (!searchTerm.trim()) return null;
 
   if (isLoading) {
@@ -27,19 +29,18 @@ function SearchDropdown({ posts, searchTerm, isLoading, onSelect }) {
     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-brown-200 max-h-[400px] overflow-y-auto z-50">
       <div className="py-2">
         {posts.map((post) => (
-          <Link
+          <div
             key={post.id}
-            to={`/posts/${post.id}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
+            onClick={() => {
               onSelect();
+              navigate(`/posts/${post.id}`);
             }}
             className="block px-4 py-3 hover:bg-brown-50 transition-colors cursor-pointer"
           >
             <h3 className="text-body-1 text-brown-600 font-medium">
               {post.title}
             </h3>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
