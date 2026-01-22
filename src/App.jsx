@@ -1,13 +1,14 @@
 import './App.css'
-import NavBar from "./components/NavBar";
-import HeroSection from "./components/HeroSection";
+import { Routes, Route } from "react-router-dom";
+import LandingPage from "./page/landingpage";
+import ArticleDetail from "./page/ArticleDetail";
 
 function App() {
   return (
-    <div className="">
-      <NavBar/>
-      <HeroSection/>
-    </div>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/posts/:id" element={<ArticleDetail />} />
+    </Routes>
   )
 }
 
