@@ -17,224 +17,94 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import BlogCard from "./BlogCard";
-import { blogPosts } from "@/data/blogPosts";
 import axios from "axios";
 import SearchDropdown from "./SearchDropdown";
 
 function ArticleSection() {
 
-  const [blogData, setBlogData] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [blogData,setBlogData] = useState([])
 
   const [selectedCategory, setSelectedCategory] = useState("highlight");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCheck, setfilterCheck] = useState(false);
-  const [postsWithContent, setPostsWithContent] = useState([]);
-  const [isFetchingContent, setIsFetchingContent] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const searchInputRef = useRef(null);
-  const searchContainerRef = useRef(null);
-
-  // รีเซ็ตโพสต์เมื่อเปลี่ยน category
-  useEffect(() => {
-    setBlogData([]);
-    setPage(1);
-    setHasMore(true);
-    setfilterCheck(false);
-  }, [selectedCategory]);
-
-  // โหลดข้อมูลเมื่อ page หรือ selectedCategory เปลี่ยน
-  useEffect(() => {
-    // ป้องกันการโหลดซ้ำถ้ายังโหลดไม่เสร็จ
-    if (isLoading) return;
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const categoryParam = selectedCategory === "highlight" ? "" : selectedCategory;
-
-        const response = await axios.get("https://blog-post-project-api.vercel.app/posts", {
-          params: {
-            page: page,
-            limit: 6,
-            category: categoryParam,
-          },
-        });
-
-        if (page === 1) {
-          // แทนที่โพสต์เดิม
-          setBlogData(response.data.posts);
-          setPostsWithContent([]);
-        } else {
-          // รวมโพสต์ใหม่กับโพสต์เดิม
-          setBlogData((prevPosts) => [...prevPosts, ...response.data.posts]);
-        }
-
-        // ตรวจสอบว่าถึงหน้าสุดท้ายหรือยัง
-        if (response.data.currentPage >= response.data.totalPages) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-        setfilterCheck(true);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        setfilterCheck(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, selectedCategory]);
-  console.log(blogData);
-  const dataCategories = blogData.map((n) => n.category)
-  const categories = ["Highlight", ...new Set(dataCategories)];
-  console.log(categories);
+  const [filterCheck,setfilterCheck] = useState(false)
+  const [page , setPage] = useState(1)
+  const [totalPage , setTotalPage] = useState(0)
+  const [isLoad,setIsLoad] = useState(false)
+  const [dataCategory, setDataCategory] = useState([])
+  console.log(selectedCategory);  
+  console.log(dataCategory);
   
-  // Fetch content สำหรับ posts ที่ตรงกับ search
-  useEffect(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term || blogData.length === 0) {
-      setPostsWithContent([]);
-      return;
-    }
-
-    const fetchContentForSearch = async () => {
-      setIsFetchingContent(true);
-      try {
-        // ค้นหา title และ description ก่อน (ไม่ต้อง fetch content)
-        const titleDescMatches = blogData.filter((post) => {
-          const titleMatch = (post.title || "").toLowerCase().includes(term);
-          const descMatch = (post.description || "").toLowerCase().includes(term);
-          return titleMatch || descMatch;
-        });
-
-        // Posts ที่ไม่ match title/description ต้อง fetch content เพื่อค้นหา
-        const otherPosts = blogData.filter((post) => {
-          const titleMatch = (post.title || "").toLowerCase().includes(term);
-          const descMatch = (post.description || "").toLowerCase().includes(term);
-          return !titleMatch && !descMatch;
-        });
-
-        // Fetch content สำหรับ posts ที่ไม่ match title/description
-        const postsWithContentData = await Promise.all(
-          otherPosts.map(async (post) => {
-            try {
-              const response = await axios.get(
-                `https://blog-post-project-api.vercel.app/posts/${post.id}`
-              );
-              const content = (response.data.content || "").toLowerCase();
-              if (content.includes(term)) {
-                return {
-                  ...post,
-                  content: response.data.content || "",
-                };
-              }
-              return null;
-            } catch (error) {
-              console.error(`Error fetching content for post ${post.id}:`, error);
-              return null;
-            }
-          })
-        );
-
-        // รวม posts ที่ match title/description กับ posts ที่ match content
-        const allMatches = [
-          ...titleDescMatches,
-          ...postsWithContentData.filter((post) => post !== null),
-        ];
-
-        setPostsWithContent(allMatches);
-      } catch (error) {
-        console.error("Error fetching content:", error);
-      } finally {
-        setIsFetchingContent(false);
-      }
-    };
-
-    // Debounce search
-    const timeoutId = setTimeout(() => {
-      fetchContentForSearch();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, blogData]);
-
-  const matchesSearch = (post, term) => {
-    const titleMatch = (post.title || "").toLowerCase().includes(term);
-    const descMatch = (post.description || "").toLowerCase().includes(term);
-    const contentMatch = (post.content || "").toLowerCase().includes(term);
-    return titleMatch || descMatch || contentMatch;
-  };
-
-  // Search results สำหรับ dropdown
-  const searchResults = (() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) {
-      return [];
-    }
-    return postsWithContent.filter((post) => matchesSearch(post, term));
-  })();
-
-  // Filtered posts สำหรับแสดงใน grid
-  const filteredPosts = (() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) {
-      return blogData;
-    }
-    
-    // ค้นหาใน blogData ที่มี title/description match
-    const titleDescMatches = blogData.filter((post) => {
-      const titleMatch = (post.title || "").toLowerCase().includes(term);
-      const descMatch = (post.description || "").toLowerCase().includes(term);
-      return titleMatch || descMatch;
-    });
-
-    // รวมกับ posts ที่ match content
-    const contentMatches = postsWithContent.filter((post) => {
-      const titleMatch = (post.title || "").toLowerCase().includes(term);
-      const descMatch = (post.description || "").toLowerCase().includes(term);
-      // ถ้า match title/description แล้วจะอยู่ใน titleDescMatches แล้ว
-      if (titleMatch || descMatch) return false;
-      // ตรวจสอบ content
-      return (post.content || "").toLowerCase().includes(term);
-    });
-
-    // รวมผลลัพธ์และลบ duplicates
-    const allMatches = [...titleDescMatches, ...contentMatches];
-    const uniqueMatches = allMatches.filter((post, index, self) =>
-      index === self.findIndex((p) => p.id === post.id)
+  
+  const getData = async () => {
+    if (isLoad) return;
+    setIsLoad(true)
+    const response = await axios.get("https://blog-post-project-api.vercel.app/posts",
+     { params: {
+        page: page,
+        limit: 6,
+        category: selectedCategory === "highlight" ? "" : selectedCategory
+      }}
     );
     
-    return uniqueMatches;
-  })();
+  
+    console.log(`page count :${response.data.totalPages}`);
+    
+    setfilterCheck(true)
 
-  // ฟังก์ชันเพิ่มหน้า
-  const handleLoadMore = () => {
-    setPage((prevPage) => prevPage + 1);
+    if (page === 1) {
+      setBlogData(response.data.posts);
+    } else {
+      setBlogData((prevBlog) => [...prevBlog , ...response.data.posts]);
+    }
+    setTotalPage(response.data.totalPages);
+    setIsLoad(false)
   };
 
-  // ปิด dropdown เมื่อคลิกนอก
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target)
-      ) {
-        setIsSearchFocused(false);
-      }
-    };
+  const getCategory = async() => {
+    const catagoryData = await axios.get('https://blog-post-project-api.vercel.app/posts')
+    setDataCategory(catagoryData.data.posts)
+  }
+  console.log(page);
+  console.log(totalPage);
+  console.log(blogData);
+  
+  
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+  useEffect(() => {
+    getData();
+  }, [page]);
+
+  useEffect(() => {
+    if (page === 1) {
+      getData(); 
+    } else {
+      setPage(1);
+    }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    getCategory();
   }, []);
+
+
+  const dataCategories = dataCategory.map((n) => n.category)
+  const categories = ["Highlight", ...new Set(dataCategories)];
+  
+  const matchesCategory = (post) =>
+    selectedCategory === "highlight"
+      ? true
+      : (post.category || "").toLowerCase() === selectedCategory;
+
+  const matchesSearch = (post, term) =>
+
+    (post.title || "").toLowerCase().includes(term) ||
+    (post.description || "").toLowerCase().includes(term) ||
+    (post.author || "").toLowerCase().includes(term);
+
+  const filteredPosts = (() => {
+    const term = searchTerm.trim().toLowerCase();
+    return blogData.filter((post) => matchesCategory(post) && matchesSearch(post, term));
+  })();
 
   return (
     <section className="w-full px-4 py-12 md:px-32 md:py-20 font-sans">
@@ -400,30 +270,36 @@ function ArticleSection() {
               />
             </div>
           ))}
-          {filterCheck && filteredPosts.length === 0 && (
+          {page !== totalPage && page !== 0 && !isLoad ? (
+            <div className="col-span-full pt-10 text-center text-brown-400 text-body-1 underline"
+            onClick={() => setPage((page) => page + 1)}>
+              View More
+            </div>
+            )
+            : page !== totalPage && page !== 0 && page > 1 ? (
+            <div className="col-span-full flex flex-col items-center justify-center text-brown-400 min-h-[300px]">
+              <h1 className="text-2xl text-center text-brown-500">Loading...</h1>
+            </div>
+            )
+            : null
+           }
+          {filterCheck && filteredPosts.length === 0 && !isLoad && (
             <div className="col-span-full text-center text-brown-400">
               No articles match your filters.
             </div>
           )}
           {!filterCheck && (
-            <div className="col-span-full text-center text-brown-400">
-              <h1>Loading...</h1>
+            <div className="col-span-full flex flex-col items-center justify-center text-brown-400 min-h-[300px]">
+              <svg className="w-[128px] h-[128px]" fill="#26231e" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25"/>
+                <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z">
+                  <animateTransform attributeName="transform" type="rotate" dur="0.75s" values="0 12 12;360 12 12" repeatCount="indefinite"/>
+                </path>
+              </svg>
+              <h1 className="text-4xl text-center">Loading...</h1>
             </div>
           )}
         </div>
-
-        {/* View More Button */}
-        {hasMore && filterCheck && (
-          <div className="text-center mt-8">
-            <button
-              onClick={handleLoadMore}
-              className="hover:text-brown-500 font-medium underline text-brown-400 transition-colors"
-              disabled={isLoading}
-            >
-              {isLoading ? "Loading..." : "View more"}
-            </button>
-          </div>
-        )}
       </div>
     </section>
   );
