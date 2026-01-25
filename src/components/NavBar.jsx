@@ -3,27 +3,29 @@ import Button from "../common/Button";
 import { useNavigate , useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LogOut , RotateCcw , User} from "lucide-react";
+import { UserMock } from "@/mockdata/userMock";
+
 
 function NavBar() {
   const [listToggle , setListToggle] = useState(false)
-  const [role, setRole] = useState(sessionStorage.getItem('userRole') || '')
   const navigate = useNavigate()
   const location = useLocation();
   const [userDropdownOpen,setUserDropdownOpen] = useState(false)
   console.log(listToggle);
   console.log("ตอนนี้คุณอยู่ที่หน้า:", location.pathname);
 
-  // อ่าน role จาก sessionStorage เมื่อ component mount หรือ location เปลี่ยน
-  useEffect(() => {
-    const storedRole = sessionStorage.getItem('userRole') || '';
-    setRole(storedRole);
-  }, [location.pathname]);
-
   const handleNavigate = (path) => {
     sessionStorage.setItem('prevPath', location.pathname);
     navigate(path);
     setListToggle(false);
   };
+
+  const handleLogout = () => {
+    sessionStorage.setItem('online' , false)
+    sessionStorage.removeItem('userRole')
+    navigate(location.pathname)
+    window.location.reload()
+  }
   
   return (
     <header className="sticky top-0 z-50 w-full h-12 border-b border-b-brown-300 flex items-center justify-between px-4 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300 md:h-20 md:px-32 hover:bg-white/100 hover:shadow-md">
@@ -57,10 +59,10 @@ function NavBar() {
           />
         </svg>
       </button>
-      {!role || role === '' ? (
+      {sessionStorage.getItem('online') !== 'true'  ? (
         <>
         {/* Desktop buttons */}
-      <div className="hidden md:flex items-center gap-3 " >
+      <div className=" hidden md:flex items-center gap-3 " >
         <Button variant="secondary" onClick={() => handleNavigate("/login")} >Log in</Button>
         <Button onClick={() => handleNavigate("/signup")}>Sign up</Button>
       </div>
@@ -100,13 +102,13 @@ function NavBar() {
           >
             {/* Avatar */}
             <img
-              src={'https://image2url.com/r2/default/images/1769339595062-978cbe43-e571-4d63-aa61-ec47575082d0.png'}
+              src={UserMock.img}
               alt={"Avatar"}
               className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow"
             />
             {/* User display name */}
             <span className="text-brown-600 font-medium line-clamp-1 max-w-[100px] hidden md:inline-block">
-              {"Pond"}
+              {UserMock.username}
             </span>
             {/* Dropdown icon */}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -117,14 +119,14 @@ function NavBar() {
             <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-lg py-3 z-50 border border-brown-100 animate-fade-in">
               <div className="gap-2">
                 <button
-                className="flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                className="cursor-pointer flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
                 onClick={() => { setUserDropdownOpen(false); handleNavigate('/profile'); }}
               >
                 <User />
                 <span className="font-medium">Profile</span>
               </button>
               <button
-                className="flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                className="cursor-pointer flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
                 onClick={() => { setUserDropdownOpen(false); handleNavigate('/reset-password'); }}
               >
                 <RotateCcw />
@@ -134,7 +136,7 @@ function NavBar() {
               
               <div className="my-1 border-t border-brown-300" />
               <button
-                className="flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                className="cursor-pointer flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
                 onClick={() => { setUserDropdownOpen(false); handleLogout(); }}
               >
                 <LogOut />

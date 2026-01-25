@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link , useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Toast from "../common/Toast";
+import { UserMock } from '../mockdata/userMock'
 
 
 function LoginPage() {
@@ -9,6 +10,7 @@ function LoginPage() {
     email: "",
     password: "",
   });
+  
 
   const [errors, setErrors] = useState({
     email: "",
@@ -53,14 +55,16 @@ function LoginPage() {
     
       // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
       sessionStorage.setItem('userRole', 'admin');
+      sessionStorage.setItem('online', true)
       // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
       navigate(backTo);
       sessionStorage.removeItem('prevPath');
       return;
-    } else if (formData.email.trim() === 'pond' && formData.password === '1234') {
+    } else if (formData.email.trim() === UserMock.email && formData.password === UserMock.password) {
  
       // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
       sessionStorage.setItem('userRole', 'user');
+      sessionStorage.setItem('online', true)
       // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
       navigate(backTo);
       sessionStorage.removeItem('prevPath');

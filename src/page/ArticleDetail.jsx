@@ -9,6 +9,7 @@ import LoginModal from "../components/LoginModal";
 import AuthorSidebar from "../components/AuthorSidebar";
 import LikeShareSection from "../components/LikeShareSection";
 import CommentSection from "../components/CommentSection";
+import { UserMock } from "@/mockdata/userMock";
 
 function ArticleDetail() {
   const pageId = useParams();
@@ -32,11 +33,23 @@ function ArticleDetail() {
   }, []);
 
   const handleLike = () => {
-    setShowModal(true);
+    // ถ้าไม่ได้ login ให้เด้ง modal
+    if (sessionStorage.getItem('online') !== 'true') {
+      setShowModal(true);
+      return;
+    }
+    // ถ้า login แล้วให้ like ได้เลย
+    setIsLiked(!isLiked);
+    setLikes(prev => isLiked ? prev - 1 : prev + 1);
   };
 
   const handleCommentFocus = () => {
-    setShowModal(true);
+    // ถ้าไม่ได้ login ให้เด้ง modal
+    if (sessionStorage.getItem('online') !== 'true') {
+      setShowModal(true);
+      return;
+    }
+    // ถ้า login แล้วให้ focus ได้เลย (ไม่ต้องเปิด modal)
   };
 
   const handleCopyLink = () => {
@@ -49,8 +62,8 @@ function ArticleDetail() {
         ...comments,
         {
           id: comments.length + 1,
-          author: "You",
-          avatar: "https://res.cloudinary.com/dcbpjtd1r/image/upload/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg",
+          author: UserMock.username,
+          avatar: UserMock.img,
           date: new Date().toLocaleDateString("th-TH", {
             day: "numeric",
             month: "long",
