@@ -24,7 +24,7 @@ function CommentSection({
         <div className="flex justify-center mt-4">
           <button
             onClick={onSendComment}
-            className="px-6 py-2 bg-brown-600 text-white rounded-full text-body-2 md:text-body-1 font-medium hover:bg-brown-500 transition-all duration-300"
+            className=" cursor-pointer px-6 py-2 bg-brown-600 text-white rounded-full text-body-2 md:text-body-1 font-medium hover:bg-brown-500 transition-all duration-300"
           >
             Send
           </button>

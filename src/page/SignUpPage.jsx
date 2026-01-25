@@ -62,7 +62,7 @@ function SignUpPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate all fields
+    // ตรวจสอบข้อมูลทั้งหมด
     const newErrors = {
       name: validateField("name", formData.name),
       username: validateField("username", formData.username),
@@ -78,21 +78,30 @@ function SignUpPage() {
       password: true,
     });
 
-    // Check if there are any errors
+    // ตรวจสอบว่ามี error หรือไม่
     const hasErrors = Object.values(newErrors).some((error) => error !== "");
     if (!hasErrors) {
       console.log("Form submitted:", formData);
-      // TODO: Replace with actual API call
-      // Simulate successful registration
+      // TODO: แทนที่ด้วยการเรียก API จริง
+      // จำลองการสมัครสมาชิกสำเร็จ
+      setRole('user')
+      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
+      sessionStorage.setItem('userRole', 'user');
       setShowSuccess(true);
     }
   };
+
+  const backTo = sessionStorage.getItem('prevPath') || '/';
+  const successBtn = () => {
+    navigate(backTo);
+    sessionStorage.removeItem('prevPath');
+  }
 
   const getInputClassName = (fieldName) => {
     const baseClass =
       "w-full px-4 py-3 bg-white border rounded-lg text-body-1 placeholder:text-brown-400 focus:outline-none focus:ring-2 transition-all duration-300";
     
-    // All fields validate only on submit
+    // ฟิลด์ทั้งหมดจะตรวจสอบเมื่อกด submit เท่านั้น
     if (errors[fieldName] && touched[fieldName]) {
       return `${baseClass} border-red-400 text-red-500 focus:ring-red-300`;
     }
@@ -106,21 +115,21 @@ function SignUpPage() {
       <main className="flex items-center justify-center px-4 py-12 md:py-20">
         <div className="bg-brown-100 rounded-[16px] p-8 md:p-12 w-full max-w-[640px]">
           {showSuccess ? (
-            // Success Message
+            // ข้อความสำเร็จ
             <div className="flex flex-col items-center text-center">
-              {/* Success Icon */}
+              {/* ไอคอนสำเร็จ */}
               <div className="w-20 h-20 md:w-24 md:h-24 bg-green-500 rounded-full flex items-center justify-center mb-6">
                 <Check className="w-10 h-10 md:w-12 md:h-12 text-white" strokeWidth={3} />
               </div>
 
-              {/* Success Message */}
+              {/* ข้อความสำเร็จ */}
               <h2 className="text-headline-3 md:text-headline-2 text-brown-600 font-semibold mb-8">
                 Registration success
               </h2>
 
-              {/* Continue Button */}
+              {/* ปุ่มดำเนินการต่อ */}
               <button
-                onClick={() => navigate("/login")}
+                onClick={successBtn}
                 className="px-12 py-3 bg-brown-600 text-white rounded-full text-body-1 font-medium hover:bg-brown-500 transition-all duration-300"
               >
                 Continue
@@ -133,7 +142,7 @@ function SignUpPage() {
               </h1>
 
               <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-            {/* Name */}
+            {/* ชื่อ */}
             <div>
               <label className="block text-body-2 text-brown-500 mb-2">
                 Name
@@ -151,7 +160,7 @@ function SignUpPage() {
               )}
             </div>
 
-            {/* Username */}
+            {/* ชื่อผู้ใช้ */}
             <div>
               <label className="block text-body-2 text-brown-500 mb-2">
                 Username
@@ -169,7 +178,7 @@ function SignUpPage() {
               )}
             </div>
 
-            {/* Email */}
+            {/* อีเมล */}
             <div>
               <label className="block text-body-2 text-brown-500 mb-2">
                 Email
@@ -187,7 +196,7 @@ function SignUpPage() {
               )}
             </div>
 
-            {/* Password */}
+            {/* รหัสผ่าน */}
             <div>
               <label className="block text-body-2 text-brown-500 mb-2">
                 Password
@@ -205,7 +214,7 @@ function SignUpPage() {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* ปุ่มส่งข้อมูล */}
             <div className="flex justify-center pt-4">
               <button
                 type="submit"
@@ -216,7 +225,7 @@ function SignUpPage() {
             </div>
           </form>
 
-              {/* Login Link */}
+              {/* ลิงก์เข้าสู่ระบบ */}
               <p className="text-body-2 text-brown-400 text-center mt-6">
                 Already have an account?{" "}
                 <Link to="/login" className="text-brown-600 font-medium underline">

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link , useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Toast from "../common/Toast";
+
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -13,18 +14,17 @@ function LoginPage() {
     email: "",
     password: "",
   });
-
+  const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [isLoginError, setIsLoginError] = useState(false);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user types
+    // ล้าง error เมื่อผู้ใช้พิมพ์
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    // Clear login error when user starts typing
+    // ล้าง login error เมื่อผู้ใช้เริ่มพิมพ์
     if (isLoginError) {
       setIsLoginError(false);
     }
@@ -33,7 +33,7 @@ function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Simple validation
+    // ตรวจสอบข้อมูลเบื้องต้น
     const newErrors = {
       email: formData.email.trim() ? "" : "Email is required",
       password: formData.password ? "" : "Password is required",
@@ -41,44 +41,65 @@ function LoginPage() {
 
     setErrors(newErrors);
 
-    // Check if there are validation errors
+    // ตรวจสอบว่ามี validation errors หรือไม่
     const hasValidationErrors = Object.values(newErrors).some((error) => error !== "");
 
     if (hasValidationErrors) {
       return;
     }
+    const backTo = sessionStorage.getItem('prevPath') || '/';
+    // ตรวจสอบข้อมูลล็อกอิน
+    if (formData.email.trim() === 'admin' && formData.password === '1234') {
+    
+      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
+      sessionStorage.setItem('userRole', 'admin');
+      // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
+      navigate(backTo);
+      sessionStorage.removeItem('prevPath');
+      return;
+    } else if (formData.email.trim() === 'pond' && formData.password === '1234') {
+ 
+      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
+      sessionStorage.setItem('userRole', 'user');
+      // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
+      navigate(backTo);
+      sessionStorage.removeItem('prevPath');
+      return;
+    }
 
-    // TODO: Replace with actual API call
-    // Simulate login failure for demo
-    // Reset form data
+    // ข้อมูลล็อกอินไม่ถูกต้อง
+    // รีเซ็ตข้อมูลฟอร์ม
     setFormData({
       email: "",
       password: "",
     });
     
-    // Clear errors
+    // ล้าง errors
     setErrors({
       email: "",
       password: "",
     });
     
-    // Set login error to show red border
+    // ตั้งค่า login error เพื่อแสดงกรอบสีแดง
     setIsLoginError(true);
     
-    // Show toast notification
+    // แสดง toast notification
     setShowToast(true);
     
-    // Auto hide toast after 5 seconds
+    // ซ่อน toast อัตโนมัติหลังจาก 5 วินาที
     setTimeout(() => {
       setShowToast(false);
     }, 5000);
+
+    
+    
   };
 
   const getInputClassName = (fieldName) => {
     const baseClass =
       "w-full px-4 py-3 bg-white border rounded-lg text-body-1 placeholder:text-brown-400 focus:outline-none focus:ring-2 transition-all duration-300";
 
-    // Show red border if there's a validation error or login error
+    // แสดงกรอบสีแดงถ้ามี validation error หรือ login error
     if (errors[fieldName] || isLoginError) {
       return `${baseClass} border-red-400 text-red-500 focus:ring-red-300`;
     }
@@ -96,7 +117,7 @@ function LoginPage() {
           </h1>
 
           <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-            {/* Email */}
+            {/* อีเมล */}
             <div>
               <label className="block text-body-2 text-brown-500 mb-2">
                 Email
@@ -114,7 +135,7 @@ function LoginPage() {
               )}
             </div>
 
-            {/* Password */}
+            {/* รหัสผ่าน */}
             <div>
               <label className="block text-body-2 text-brown-500 mb-2">
                 Password
@@ -132,7 +153,7 @@ function LoginPage() {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* ปุ่มส่งข้อมูล */}
             <div className="flex justify-center pt-4">
               <button
                 type="submit"
@@ -143,7 +164,7 @@ function LoginPage() {
             </div>
           </form>
 
-          {/* Sign Up Link */}
+          {/* ลิงก์สมัครสมาชิก */}
           <p className="text-body-2 text-brown-400 text-center mt-6">
             Don't have any account?{" "}
             <Link to="/signup" className="text-brown-600 font-medium underline">
@@ -153,7 +174,7 @@ function LoginPage() {
         </div>
       </main>
 
-      {/* Toast Notification */}
+      {/* การแจ้งเตือน Toast */}
       <Toast
         type="error"
         title="Please check your email or password"

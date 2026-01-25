@@ -1,7 +1,7 @@
 import React from "react";
 
 const Button = ({ variant = "primary", children, onClick, ...props }) => {
-  const baseClasses = `flex items-center justify-center font-medium px-10 py-3 rounded-full h-12 min-w-[127px] gap-1.5 border text-sm transition-all duration-300 transform active:scale-95`;
+  const baseClasses = ` cursor-pointer flex items-center justify-center font-medium px-10 py-3 rounded-full h-12 min-w-[127px] gap-1.5 border text-sm transition-all duration-300 transform active:scale-95`;
   
   const variantClasses =
     variant === "secondary"

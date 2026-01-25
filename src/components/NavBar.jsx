@@ -1,12 +1,29 @@
 import { FiMenu } from "react-icons/fi";
 import Button from "../common/Button";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate , useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { LogOut , RotateCcw , User} from "lucide-react";
 
 function NavBar() {
   const [listToggle , setListToggle] = useState(false)
+  const [role, setRole] = useState(sessionStorage.getItem('userRole') || '')
   const navigate = useNavigate()
+  const location = useLocation();
+  const [userDropdownOpen,setUserDropdownOpen] = useState(false)
   console.log(listToggle);
+  console.log("ตอนนี้คุณอยู่ที่หน้า:", location.pathname);
+
+  // อ่าน role จาก sessionStorage เมื่อ component mount หรือ location เปลี่ยน
+  useEffect(() => {
+    const storedRole = sessionStorage.getItem('userRole') || '';
+    setRole(storedRole);
+  }, [location.pathname]);
+
+  const handleNavigate = (path) => {
+    sessionStorage.setItem('prevPath', location.pathname);
+    navigate(path);
+    setListToggle(false);
+  };
   
   return (
     <header className="sticky top-0 z-50 w-full h-12 border-b border-b-brown-300 flex items-center justify-between px-4 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300 md:h-20 md:px-32 hover:bg-white/100 hover:shadow-md">
@@ -40,11 +57,12 @@ function NavBar() {
           />
         </svg>
       </button>
-
-      {/* Desktop buttons */}
-      <div className="hidden md:flex items-center gap-3">
-        <Button variant="secondary" onClick={() => navigate("/login")}>Log in</Button>
-        <Button onClick={() => navigate("/signup")}>Sign up</Button>
+      {!role || role === '' ? (
+        <>
+        {/* Desktop buttons */}
+      <div className="hidden md:flex items-center gap-3 " >
+        <Button variant="secondary" onClick={() => handleNavigate("/login")} >Log in</Button>
+        <Button onClick={() => handleNavigate("/signup")}>Sign up</Button>
       </div>
 
       {/* Mobile menu icon: only on mobile */}
@@ -61,16 +79,75 @@ function NavBar() {
       {/* Example mobile menu (optional): */}
       {listToggle && (
         <div className="absolute right-[0.5px] top-12 p-6 bg-white/95 w-full shadow-lg flex flex-col gap-4 md:hidden">
-          <Button variant="secondary" onClick={() => {
-            navigate("/login");
-            setListToggle(false);
-          }}>Log in</Button>
-          <Button onClick={() => {
-            navigate("/signup");
-            setListToggle(false);
-          }}>Sign up</Button>
+          <Button variant="secondary" onClick={() => handleNavigate("/login")}>Log in</Button>
+          <Button onClick={() => handleNavigate("/signup")}>Sign up</Button>
         </div>
       )}
+      </>
+      ) 
+      : 
+      (
+        <>
+        <div>
+        {/* 
+          Mockup: User dropdown menu, only visible for authenticated users.
+          You will likely need to handle avatar, display name, dropdown UI/UX, and logout logic outside of this snippet.
+        */}
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 focus:outline-none"
+            onClick={() => setUserDropdownOpen(prev => !prev)}
+          >
+            {/* Avatar */}
+            <img
+              src={'https://image2url.com/r2/default/images/1769339595062-978cbe43-e571-4d63-aa61-ec47575082d0.png'}
+              alt={"Avatar"}
+              className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow"
+            />
+            {/* User display name */}
+            <span className="text-brown-600 font-medium line-clamp-1 max-w-[100px] hidden md:inline-block">
+              {"Pond"}
+            </span>
+            {/* Dropdown icon */}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {userDropdownOpen && (
+            <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-lg py-3 z-50 border border-brown-100 animate-fade-in">
+              <div className="gap-2">
+                <button
+                className="flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                onClick={() => { setUserDropdownOpen(false); handleNavigate('/profile'); }}
+              >
+                <User />
+                <span className="font-medium">Profile</span>
+              </button>
+              <button
+                className="flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                onClick={() => { setUserDropdownOpen(false); handleNavigate('/reset-password'); }}
+              >
+                <RotateCcw />
+                <span className="font-medium">Reset password</span>
+              </button>
+              </div>
+              
+              <div className="my-1 border-t border-brown-300" />
+              <button
+                className="flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                onClick={() => { setUserDropdownOpen(false); handleLogout(); }}
+              >
+                <LogOut />
+                <span className="font-medium">Log out</span>
+              </button>
+            </div>
+          )}
+        </div>
+        </div>
+      </>
+      )
+      }
+      
     </header>
   );
 }
