@@ -1,6 +1,15 @@
+import { useEffect } from "react";
 import { X } from "lucide-react";
 
-function Toast({ type = "error", title, message, onClose, isVisible }) {
+function Toast({ type = "error", title, message, onClose, isVisible, autoClose }) {
+  useEffect(() => {
+    if (!isVisible || !autoClose) return;
+    const timer = setTimeout(() => {
+      onClose && onClose();
+    }, autoClose);
+    return () => clearTimeout(timer);
+  }, [isVisible, autoClose, onClose]);
+ 
   if (!isVisible) return null;
 
   const bgColor = type === "error" ? "bg-red-500" : "bg-green-500";

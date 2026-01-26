@@ -3,6 +3,7 @@ import { Link , useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Toast from "../common/Toast";
 import { UserMock } from '../mockdata/userMock'
+import { AdminMock } from "@/mockdata/adminMock";
 
 
 function LoginPage() {
@@ -51,13 +52,13 @@ function LoginPage() {
     }
     const backTo = sessionStorage.getItem('prevPath') || '/';
     // ตรวจสอบข้อมูลล็อกอิน
-    if (formData.email.trim() === 'admin' && formData.password === '1234') {
+    if (formData.email.trim() === AdminMock.email && formData.password === AdminMock.password) {
     
       // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
       sessionStorage.setItem('userRole', 'admin');
       sessionStorage.setItem('online', true)
       // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
-      navigate(backTo);
+      navigate('/admin');
       sessionStorage.removeItem('prevPath');
       return;
     } else if (formData.email.trim() === UserMock.email && formData.password === UserMock.password) {

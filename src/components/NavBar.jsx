@@ -1,8 +1,8 @@
 import { FiMenu } from "react-icons/fi";
 import Button from "../common/Button";
 import { useNavigate , useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { LogOut , RotateCcw , User} from "lucide-react";
+import { useState } from "react";
+import { LogOut , RotateCcw , User, Bell, ExternalLink } from "lucide-react";
 import { UserMock } from "@/mockdata/userMock";
 
 
@@ -23,7 +23,7 @@ function NavBar() {
   const handleLogout = () => {
     sessionStorage.setItem('online' , false)
     sessionStorage.removeItem('userRole')
-    navigate(location.pathname)
+    navigate('/login')
     window.location.reload()
   }
   
@@ -81,8 +81,8 @@ function NavBar() {
       {/* Example mobile menu (optional): */}
       {listToggle && (
         <div className="absolute right-[0.5px] top-12 p-6 bg-white/95 w-full shadow-lg flex flex-col gap-4 md:hidden">
-          <Button variant="secondary" onClick={() => handleNavigate("/login")}>Log in</Button>
-          <Button onClick={() => handleNavigate("/signup")}>Sign up</Button>
+          <Button variant="secondary" onClick={() => handleNavigate("/login")} className='cursor-pointer'>Log in</Button>
+          <Button className='cursor-pointer' onClick={() => handleNavigate("/signup")}>Sign up</Button>
         </div>
       )}
       </>
@@ -90,27 +90,20 @@ function NavBar() {
       : 
       (
         <>
-        <div>
-        {/* 
-          Mockup: User dropdown menu, only visible for authenticated users.
-          You will likely need to handle avatar, display name, dropdown UI/UX, and logout logic outside of this snippet.
-        */}
-        <div className="relative">
+        {/* Desktop: User dropdown */}
+        <div className="hidden md:block relative">
           <button
             className="flex items-center gap-2 focus:outline-none"
             onClick={() => setUserDropdownOpen(prev => !prev)}
           >
-            {/* Avatar */}
             <img
               src={UserMock.img}
               alt={"Avatar"}
-              className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow"
+              className="w-10 h-10 rounded-full object-cover border-2 border-white shadow"
             />
-            {/* User display name */}
-            <span className="text-brown-600 font-medium line-clamp-1 max-w-[100px] hidden md:inline-block">
+            <span className="text-brown-600 font-medium line-clamp-1 max-w-[100px]">
               {UserMock.username}
             </span>
-            {/* Dropdown icon */}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
@@ -119,24 +112,39 @@ function NavBar() {
             <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-lg py-3 z-50 border border-brown-100 animate-fade-in">
               <div className="gap-2">
                 <button
-                className="cursor-pointer flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
-                onClick={() => { setUserDropdownOpen(false); handleNavigate('/profile'); }}
-              >
-                <User />
-                <span className="font-medium">Profile</span>
-              </button>
-              <button
-                className="cursor-pointer flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
-                onClick={() => { setUserDropdownOpen(false); handleNavigate('/reset-password'); }}
-              >
-                <RotateCcw />
-                <span className="font-medium">Reset password</span>
-              </button>
+                  className="cursor-pointer hover:bg-brown-200 flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                  onClick={() => { setUserDropdownOpen(false); handleNavigate('/profile'); }}
+                >
+                  <User />
+                  <span className="font-medium">Profile</span>
+                </button>
+                <button
+                  className="cursor-pointer hover:bg-brown-200 flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                  onClick={() => { 
+                    setUserDropdownOpen(false); 
+                    navigate('/profile', { state: { tab: 'reset' } });
+                  }}
+                >
+                  <RotateCcw />
+                  <span className="font-medium">Reset password</span>
+                </button>
+                {sessionStorage.getItem('userRole') === 'admin' && (
+                  <button
+                    className="cursor-pointer hover:bg-brown-200 flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                    onClick={() => { 
+                      setUserDropdownOpen(false); 
+                      handleNavigate('/admin');
+                    }}
+                  >
+                    <ExternalLink />
+                    <span className="font-medium">Admin panel</span>
+                  </button>
+                )}
               </div>
               
               <div className="my-1 border-t border-brown-300" />
               <button
-                className="cursor-pointer flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
+                className="cursor-pointer hover:bg-brown-200 flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
                 onClick={() => { setUserDropdownOpen(false); handleLogout(); }}
               >
                 <LogOut />
@@ -145,7 +153,81 @@ function NavBar() {
             </div>
           )}
         </div>
+
+        {/* Mobile: Hamburger menu */}
+        <div className="flex md:hidden items-center">
+          <button
+            type="button"
+            onClick={() => setListToggle(!listToggle)}
+          >
+            <FiMenu className="w-6 h-6 transition-transform duration-300 hover:rotate-90" />
+          </button>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {listToggle && (
+          <div className="absolute left-0 right-0 top-12 bg-white shadow-lg md:hidden z-50">
+            {/* User info header */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-brown-200">
+              <div className="flex items-center gap-3">
+                <img
+                  src={UserMock.img}
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <span className="text-brown-600 font-medium">{UserMock.username}</span>
+              </div>
+              <button className="p-2 rounded-full border border-brown-200">
+                <Bell className="w-5 h-5 text-brown-400" />
+              </button>
+            </div>
+
+            {/* Menu items */}
+            <div className="px-4 py-2">
+              <button
+                className="flex items-center w-full gap-3 px-2 py-3 text-brown-600 hover:bg-brown-100 rounded-lg transition-all"
+                onClick={() => { setListToggle(false); handleNavigate('/profile'); }}
+              >
+                <User className="w-5 h-5" />
+                <span className="font-medium">Profile</span>
+              </button>
+              <button
+                className="flex items-center w-full gap-3 px-2 py-3 text-brown-600 hover:bg-brown-100 rounded-lg transition-all"
+                onClick={() => { 
+                  setListToggle(false); 
+                  navigate('/profile', { state: { tab: 'reset' } });
+                }}
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span className="font-medium">Reset password</span>
+              </button>
+              {sessionStorage.getItem('userRole') === 'admin' && (
+                <button
+                  className="flex items-center w-full gap-3 px-2 py-3 text-brown-600 hover:bg-brown-100 rounded-lg transition-all"
+                  onClick={() => { 
+                    setListToggle(false); 
+                    handleNavigate('/admin');
+                  }}
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  <span className="font-medium">Admin panel</span>
+                </button>
+              )}
+            </div>
+
+            <div className="mx-4 border-t border-brown-200" />
+
+            <div className="px-4 py-2">
+              <button
+                className="flex items-center w-full gap-3 px-2 py-3 text-brown-600 hover:bg-brown-100 rounded-lg transition-all"
+                onClick={() => { setListToggle(false); handleLogout(); }}
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Log out</span>
+              </button>
+            </div>
+          </div>
+        )}
       </>
       )
       }
