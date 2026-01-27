@@ -48,7 +48,6 @@ function ArticleSection() {
       }}
     );
     
-    
     setfilterCheck(true)
     
     if (page === 1) {
@@ -67,8 +66,6 @@ function ArticleSection() {
          keyword: searchTerm,
          limit: 100
        }})
-       
-
        
     setSearchResults(catagoryData.data.posts)
     setIsFetchingContent(false)

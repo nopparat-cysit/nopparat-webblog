@@ -5,6 +5,8 @@ import ArticleDetail from "./page/ArticleDetail";
 import LoginPage from "./page/LoginPage";
 import SignUpPage from "./page/SignUpPage";
 import Profile from './page/Profile';
+import AdminLogin from './page/admin/adminlogin';
+import Admin from './page/admin/admin';
 
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/adminlogin" element={<AdminLogin />} />
+      <Route path="/admin" element={<Admin />} />
     </Routes>
   )
 }
