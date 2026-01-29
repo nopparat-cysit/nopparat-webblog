@@ -133,7 +133,7 @@ function NavBar() {
                     className="cursor-pointer hover:bg-brown-200 flex items-center w-full gap-3 px-5 py-2 hover:bg-brown-50 text-brown-700 transition-all group"
                     onClick={() => { 
                       setUserDropdownOpen(false); 
-                      handleNavigate('/admin');
+                      handleNavigate('/articles');
                     }}
                   >
                     <ExternalLink />

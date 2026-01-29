@@ -6,8 +6,8 @@ import LoginPage from "./page/LoginPage";
 import SignUpPage from "./page/SignUpPage";
 import Profile from './page/Profile';
 import AdminLogin from './page/admin/adminlogin';
-import Admin from './page/admin/admin';
-
+import Articles from './page/admin/articles';
+import CreateArticlePage  from './page/admin/createArticle';
 
 function App() {
   return (
@@ -18,7 +18,8 @@ function App() {
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/adminlogin" element={<AdminLogin />} />
-      <Route path="/admin" element={<Admin />} />
+      <Route path="/articles" element={<Articles />} />
+      <Route path="/articles/create" element={<CreateArticlePage />} />
     </Routes>
   )
 }

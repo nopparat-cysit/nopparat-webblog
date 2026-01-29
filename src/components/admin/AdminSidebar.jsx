@@ -12,15 +12,15 @@ function AdminSidebar({ activeTab, onTabChange }) {
   };
 
   const menuItems = [
-    { id: "article", label: "Article management", icon: FileText },
-    { id: "category", label: "Category management", icon: Folder },
-    { id: "profile", label: "Profile", icon: User },
-    { id: "notification", label: "Notification", icon: Bell },
-    { id: "reset", label: "Reset password", icon: RotateCcw },
+    { id: "/articles", label: "Article management", icon: FileText },
+    { id: "/category", label: "Category management", icon: Folder },
+    { id: "/profile", label: "Profile", icon: User },
+    { id: "/notification", label: "Notification", icon: Bell },
+    { id: "/reset", label: "Reset password", icon: RotateCcw },
   ];
 
   return (
-    <aside className="w-[280px] bg-[#EFEFEF] h-screen flex flex-col border-r border-gray-200">
+    <aside className="fixed w-[280px] bg-[#EFEFEF] h-screen flex flex-col border-r border-gray-200 ">
       {/* Header - ปรับ Font และสีให้ตรงรูป */}
       <div className="px-8 py-12">
         <div className="flex items-center gap-1">
@@ -38,7 +38,7 @@ function AdminSidebar({ activeTab, onTabChange }) {
             return (
               <button
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                onClick={() => navigate(`${item.id}`)}
                 // ปรับ px-8 ให้ตรงกับ Header และลบ rounded-lg ออกเพื่อให้สีทับเต็มความกว้างแบบในรูป
                 className={`w-full flex items-center gap-4 px-8 py-4 transition-all ${
                   isActive

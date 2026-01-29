@@ -55,7 +55,7 @@ function AdminLogin() {
       sessionStorage.setItem('userRole', 'admin');
       sessionStorage.setItem('online', 'true');
       // Login สำเร็จ - redirect ไปหน้า admin
-      navigate('/admin');
+      navigate('/articles');
       return;
     }
 
