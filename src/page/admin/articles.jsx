@@ -15,6 +15,10 @@ function Admin() {
   console.log(blogList);
   const navigate = useNavigate()
 
+  const handleEdit = (id) => {
+    navigate(`/article/edit/${id}`)
+  }
+
 
   const getData = async () => {
     setIsLoading(true)
@@ -40,7 +44,7 @@ function Admin() {
   }, [])
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-brown-100">
       {/* Sidebar */}
       <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -85,7 +89,7 @@ function Admin() {
                       <input
                         type="text"
                         placeholder="Search..."
-                        className="w-full pl-10 pr-4 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange text-body-2"
+                        className="w-full pl-10 pr-4 py-2 border bg-white border-brown-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange text-body-2"
                       />
                     </div>
 
@@ -151,7 +155,7 @@ function Admin() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-4">
-                                  <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors">
+                                  <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors" onClick={()=>handleEdit(item.id)}>
                                     <Pencil className="w-5 h-5" />
                                   </button>
                                   <button className="cursor-pointer text-brown-400 hover:text-brand-red transition-colors">

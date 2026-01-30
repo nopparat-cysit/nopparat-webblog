@@ -1,8 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FileText, Folder, User, Bell, RotateCcw, ExternalLink, LogOut } from "lucide-react";
 
-function AdminSidebar({ activeTab, onTabChange }) {
+function AdminSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   const handleLogout = () => {
     sessionStorage.setItem('online', 'false');
@@ -13,10 +15,10 @@ function AdminSidebar({ activeTab, onTabChange }) {
 
   const menuItems = [
     { id: "/articles", label: "Article management", icon: FileText },
-    { id: "/category", label: "Category management", icon: Folder },
-    { id: "/profile", label: "Profile", icon: User },
+    { id: "/categories", label: "Category management", icon: Folder },
+    { id: "/admin/profile", label: "Profile", icon: User },
     { id: "/notification", label: "Notification", icon: Bell },
-    { id: "/reset", label: "Reset password", icon: RotateCcw },
+    { id: "/admin/reset-password", label: "Reset password", icon: RotateCcw },
   ];
 
   return (
@@ -34,7 +36,7 @@ function AdminSidebar({ activeTab, onTabChange }) {
         <div className="flex flex-col">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isActive = pathname === item.id || (item.id !== "/" && pathname.startsWith(item.id + "/"));
             return (
               <button
                 key={item.id}
@@ -42,7 +44,7 @@ function AdminSidebar({ activeTab, onTabChange }) {
                 // ปรับ px-8 ให้ตรงกับ Header และลบ rounded-lg ออกเพื่อให้สีทับเต็มความกว้างแบบในรูป
                 className={`w-full flex items-center gap-4 px-8 py-4 transition-all ${
                   isActive
-                    ? "bg-[#D9D7D2] text-[#4A4A4A]" 
+                    ? "bg-[#C5C3BE] text-[#2A2A2A] font-semibold"
                     : "text-[#6B6B6B] hover:bg-[#D9D7D2]/50"
                 }`}
               >
