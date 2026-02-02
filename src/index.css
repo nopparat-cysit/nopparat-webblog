@@ -194,6 +194,12 @@ html {
   color: var(--color-brown-600);
 }
 
+/* Hide native password reveal icon from browsers */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 /* Custom search cancel icon (black) */
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;

@@ -61,7 +61,8 @@ function SignUpPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+    sessionStorage.setItem('userRole', 'user');
+    sessionStorage.setItem('online', true)
     // ตรวจสอบข้อมูลทั้งหมด
     const newErrors = {
       name: validateField("name", formData.name),
@@ -84,7 +85,6 @@ function SignUpPage() {
       console.log("Form submitted:", formData);
       // TODO: แทนที่ด้วยการเรียก API จริง
       // จำลองการสมัครสมาชิกสำเร็จ
-      setRole('user')
       // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
       sessionStorage.setItem('userRole', 'user');
       setShowSuccess(true);
