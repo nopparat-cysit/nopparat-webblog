@@ -1,18 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import NavBar from "../components/NavBar";
-import Toast from "../common/Toast";
+import { useNavigate } from "react-router-dom";
+import NavBar from "../../components/NavBar";
+import Toast from "../../common/Toast";
 import { Eye, EyeOff } from "lucide-react";
-import { UserMock } from "../mockdata/userMock";
 import { AdminMock } from "@/mockdata/adminMock";
 
-
-function LoginPage() {
+function AdminLogin() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  
 
   const [errors, setErrors] = useState({
     email: "",
@@ -22,6 +19,7 @@ function LoginPage() {
   const [showToast, setShowToast] = useState(false);
   const [isLoginError, setIsLoginError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -52,25 +50,14 @@ function LoginPage() {
     if (hasValidationErrors) {
       return;
     }
-    const backTo = sessionStorage.getItem('prevPath') || '/';
-    // ตรวจสอบข้อมูลล็อกอิน
+
+    // ตรวจสอบข้อมูลล็อกอิน admin
     if (formData.email.trim() === AdminMock.email && formData.password === AdminMock.password) {
-    
       // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
       sessionStorage.setItem('userRole', 'admin');
-      sessionStorage.setItem('online', true)
-      // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
-      navigate('/adminlogin');
-      sessionStorage.removeItem('prevPath');
-      return;
-    } else if (formData.email.trim() === UserMock.email && formData.password === UserMock.password) {
- 
-      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
-      sessionStorage.setItem('userRole', 'user');
-      sessionStorage.setItem('online', true)
-      // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
-      navigate(backTo);
-      sessionStorage.removeItem('prevPath');
+      sessionStorage.setItem('online', 'true');
+      // Login สำเร็จ - redirect ไปหน้า admin
+      navigate('/articles');
       return;
     }
 
@@ -92,14 +79,6 @@ function LoginPage() {
     
     // แสดง toast notification
     setShowToast(true);
-    
-    // ซ่อน toast อัตโนมัติหลังจาก 5 วินาที
-    setTimeout(() => {
-      setShowToast(false);
-    }, 5000);
-
-    
-    
   };
 
   const getInputClassName = (fieldName, hasRightPadding = false) => {
@@ -119,8 +98,9 @@ function LoginPage() {
 
       <main className="flex items-center justify-center px-4 py-12 md:py-20">
         <div className="bg-brown-100 rounded-[16px] p-8 md:p-12 w-full max-w-[640px]">
+            <h1 className="text-headline-4 font-semibold text-brand-orange text-center ">Admin Login</h1>
           <h1 className="text-headline-2 text-brown-600 font-semibold text-center mb-8">
-            Log in
+            Login
           </h1>
 
           <form className="space-y-6" onSubmit={handleSubmit} noValidate>
@@ -184,27 +164,20 @@ function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* ลิงก์สมัครสมาชิก */}
-          <p className="text-body-2 text-brown-400 text-center mt-6">
-            Don't have any account?{" "}
-            <Link to="/signup" className="text-brown-600 font-medium underline">
-              Sign up
-            </Link>
-          </p>
         </div>
       </main>
 
       {/* การแจ้งเตือน Toast */}
       <Toast
         type="error"
-        title="Please check your email or password"
-        message="The email or password you entered is incorrect. Please try again."
+        title="Your password is incorrect or this email doesn't exist"
+        message="Please try another password or email"
         isVisible={showToast}
         onClose={() => setShowToast(false)}
+        autoClose={3000}
       />
     </div>
   );
 }
 
-export default LoginPage;
+export default AdminLogin;

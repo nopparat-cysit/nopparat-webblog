@@ -3,6 +3,6 @@ export const UserMock = {
     username: "Nopparat",
     email: "nopparat@gmail.com",
     password: "password123", 
-    img: "https://image2url.com/r2/default/images/1769339595062-978cbe43-e571-4d63-aa61-ec47575082d0.png",
+    img: "https://www.clipartmax.com/png/small/258-2582267_circled-user-male-skin-type-1-2-icon-male-user-icon.png",
     role: "user"
   };
