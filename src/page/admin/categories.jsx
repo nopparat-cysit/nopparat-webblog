@@ -96,33 +96,41 @@ function CategoriesPage() {
                 <span className="text-body-2 font-semibold text-brown-400">Category</span>
               </div>
               <ul className="divide-y divide-brown-100">
-                {filteredCategories.map((category, index) => (
-                  <li
-                    key={category.id}
-                    className={`flex items-center justify-between px-6 py-4 transition-colors hover:bg-brown-100/50 ${index % 2 === 0 ? "bg-white" : "bg-brown-100/30"
-                      }`}
-                  >
-                    <span className="text-body-2 text-brown-600">{category.name}</span>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors"
-                        onClick={() => navigate(`/categories/edit/${category.id}`, { state: { category } })}
-                        aria-label="Edit"
-                      >
-                        <Pencil className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="button"
-                        className="cursor-pointer text-brown-400 hover:text-red-500 transition-colors"
-                        onClick={() => handleDeleteClick(category)}
-                        aria-label="Delete"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
+                {filteredCategories.length === 0 ? (
+                  <li className="px-6 py-8 text-center text-body-2 text-brown-400">
+                    {categories.length === 0
+                      ? "No categories found."
+                      : "No categories match your search."}
                   </li>
-                ))}
+                ) : (
+                  filteredCategories.map((category, index) => (
+                    <li
+                      key={category.id}
+                      className={`flex items-center justify-between px-6 py-4 transition-colors hover:bg-brown-100/50 ${index % 2 === 0 ? "bg-white" : "bg-brown-100/30"
+                        }`}
+                    >
+                      <span className="text-body-2 text-brown-600">{category.name}</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors"
+                          onClick={() => navigate(`/categories/edit/${category.id}`, { state: { category } })}
+                          aria-label="Edit"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          className="cursor-pointer text-brown-400 hover:text-red-500 transition-colors"
+                          onClick={() => handleDeleteClick(category)}
+                          aria-label="Delete"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
           </div>

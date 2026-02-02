@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
-import { Check } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 
 function SignUpPage() {
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ function SignUpPage() {
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -97,11 +98,11 @@ function SignUpPage() {
     sessionStorage.removeItem('prevPath');
   }
 
-  const getInputClassName = (fieldName) => {
+  const getInputClassName = (fieldName, hasRightPadding = false) => {
     const baseClass =
-      "w-full px-4 py-3 bg-white border rounded-lg text-body-1 placeholder:text-brown-400 focus:outline-none focus:ring-2 transition-all duration-300";
-    
-    // ฟิลด์ทั้งหมดจะตรวจสอบเมื่อกด submit เท่านั้น
+      "w-full px-4 py-3 bg-white border rounded-lg text-body-1 placeholder:text-brown-400 focus:outline-none focus:ring-2 transition-all duration-300" +
+      (hasRightPadding ? " pr-12" : "");
+
     if (errors[fieldName] && touched[fieldName]) {
       return `${baseClass} border-red-400 text-red-500 focus:ring-red-300`;
     }
@@ -201,14 +202,28 @@ function SignUpPage() {
               <label className="block text-body-2 text-brown-500 mb-2">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className={getInputClassName("password")}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className={getInputClassName("password", true)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brown-400 hover:text-brown-600 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && touched.password && (
                 <p className="text-red-500 text-body-2 mt-1">{errors.password}</p>
               )}

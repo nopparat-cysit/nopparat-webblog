@@ -17,8 +17,19 @@ function Admin() {
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const navigate = useNavigate()
   const location = useLocation()
+
+  const uniqueCategories = [...new Set(blogList.map((b) => b.category).filter(Boolean))].sort();
+  const filteredBlogList = blogList.filter((item) => {
+    const matchSearch = !searchQuery.trim() || (item.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
+    const matchStatus = !statusFilter || (item.status ?? "Published") === statusFilter;
+    const matchCategory = !categoryFilter || item.category === categoryFilter;
+    return matchSearch && matchStatus && matchCategory;
+  });
 
   useEffect(() => {
     const state = location.state;
@@ -121,6 +132,8 @@ function Admin() {
                       <input
                         type="text"
                         placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border bg-white border-brown-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange text-body-2"
                       />
                     </div>
@@ -128,21 +141,29 @@ function Admin() {
                     <div className="flex gap-4">
                       {/* Status Filter */}
                       <div className="relative">
-                        <select className="appearance-none bg-white border border-brown-300 rounded-lg px-4 py-2 pr-10 text-brown-500 text-body-2 min-w-[140px] focus:outline-none">
-                          <option>Status</option>
-                          <option>Published</option>
-                          <option>Draft</option>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="appearance-none bg-white border border-brown-300 rounded-lg px-4 py-2 pr-10 text-brown-500 text-body-2 min-w-[140px] focus:outline-none focus:ring-2 focus:ring-brand-green/20"
+                        >
+                          <option value="">Status</option>
+                          <option value="Published">Published</option>
+                          <option value="Draft">Draft</option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-brown-400 w-4 h-4 pointer-events-none" />
                       </div>
 
                       {/* Category Filter */}
                       <div className="relative">
-                        <select className="appearance-none bg-white border border-brown-300 rounded-lg px-4 py-2 pr-10 text-brown-500 text-body-2 min-w-[140px] focus:outline-none">
-                          <option>Category</option>
-                          <option>Cat</option>
-                          <option>General</option>
-                          <option>Inspiration</option>
+                        <select
+                          value={categoryFilter}
+                          onChange={(e) => setCategoryFilter(e.target.value)}
+                          className="appearance-none bg-white border border-brown-300 rounded-lg px-4 py-2 pr-10 text-brown-500 text-body-2 min-w-[140px] focus:outline-none focus:ring-2 focus:ring-brand-green/20"
+                        >
+                          <option value="">Category</option>
+                          {uniqueCategories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-brown-400 w-4 h-4 pointer-events-none" />
                       </div>
@@ -167,8 +188,20 @@ function Admin() {
                               <Loading />
                             </td>
                           </tr>
+                        ) : blogList.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-8 text-center text-body-2 text-brown-400">
+                              No articles found.
+                            </td>
+                          </tr>
+                        ) : filteredBlogList.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-8 text-center text-body-2 text-brown-400">
+                              No articles match your filters.
+                            </td>
+                          </tr>
                         ) : (
-                          blogList.map((item, index) => (
+                          filteredBlogList.map((item, index) => (
                             <tr
                               key={item.id}
                               className={`hover:bg-brown-100 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-brown-100/50'}`}
@@ -181,8 +214,10 @@ function Admin() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-brand-green"></span>
-                                  <span className="text-brand-green font-semibold text-body-2">Published</span>
+                                  <span className={`w-2 h-2 rounded-full ${(item.status ?? "Published") === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
+                                  <span className={`font-semibold text-body-2 ${(item.status ?? "Published") === "Published" ? "text-brand-green" : "text-brown-400"}`}>
+                                    {item.status ?? "Published"}
+                                  </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">

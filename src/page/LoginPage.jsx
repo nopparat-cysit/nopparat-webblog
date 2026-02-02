@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link , useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Toast from "../common/Toast";
-import { UserMock } from '../mockdata/userMock'
+import { Eye, EyeOff } from "lucide-react";
+import { UserMock } from "../mockdata/userMock";
 import { AdminMock } from "@/mockdata/adminMock";
 
 
@@ -20,6 +21,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [isLoginError, setIsLoginError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -100,12 +102,12 @@ function LoginPage() {
     
   };
 
-  const getInputClassName = (fieldName) => {
+  const getInputClassName = (fieldName, hasRightPadding = false) => {
     const baseClass =
-      "w-full px-4 py-3 bg-white border rounded-lg text-body-1 placeholder:text-brown-400 focus:outline-none focus:ring-2 transition-all duration-300";
+      "w-full px-4 py-3 bg-white border rounded-lg text-body-1 placeholder:text-brown-400 focus:outline-none focus:ring-2 transition-all duration-300" +
+      (hasRightPadding ? " pr-12" : "");
 
-    // แสดงกรอบสีแดงถ้ามี validation error หรือ login error
-    if (errors[fieldName] || isLoginError) {
+    if (errors[fieldName] || (fieldName === "password" && isLoginError)) {
       return `${baseClass} border-red-400 text-red-500 focus:ring-red-300`;
     }
     return `${baseClass} border-brown-300 text-brown-600 focus:ring-brown-400`;
@@ -145,14 +147,28 @@ function LoginPage() {
               <label className="block text-body-2 text-brown-500 mb-2">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className={getInputClassName("password")}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className={getInputClassName("password", true)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brown-400 hover:text-brown-600 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && errors.password !== "" && (
                 <p className="text-red-500 text-body-2 mt-1">{errors.password}</p>
               )}

@@ -57,7 +57,7 @@ function AdminProfile() {
         </div>
         <div className="border-t border-brown-300"></div>
 
-        <div className="w-full mx-auto pt-10 px-[60px] pb-[120px]">
+        <div className="w-full mx-auto px-8 pb-[120px]">
           <div className=" rounded-xl p-10 max-w-2xl">
             {/* Profile picture */}
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
