@@ -104,8 +104,12 @@ function EditArticle() {
         }
         const payload = getFormPayload(status);
         console.log('Submit payload (edit):', payload);
+        const toast =
+          status === 'published'
+            ? { title: 'Update article and published', message: 'Your article has been successfully updated and published.' }
+            : { title: 'Update article and saved as draft', message: 'You can publish article later.' };
         // TODO: PATCH/PUT API ด้วย payload (มี status: 'draft' หรือ 'published')
-        navigate('/articles');
+        navigate('/articles', { state: { toast } });
     };
 
     return (
@@ -199,19 +203,16 @@ function EditArticle() {
                                 )}
                             </div>
 
-                            {/* Author Name */}
+                            {/* Author Name (locked) */}
                             <div className="space-y-1">
                                 <label className="text-body-2 font-semibold text-brown-400">Author name</label>
                                 <input
                                     type="text"
                                     value={authorName}
-                                    onChange={(e) => { setAuthorName(e.target.value); setFieldErrors((prev) => ({ ...prev, authorName: '' })); }}
+                                    readOnly
                                     placeholder="Thompson P."
-                                    className={`w-full h-[48px] px-4 bg-brown-100 rounded-lg focus:outline-none text-body-2 ${fieldErrors.authorName ? 'border-2 border-red-500' : 'border-none'}`}
+                                    className="w-full h-[48px] px-4 bg-brown-100 rounded-lg border border-brown-200 text-brown-400 cursor-not-allowed text-body-2 focus:outline-none"
                                 />
-                                {fieldErrors.authorName && (
-                                    <p className="text-body-3 text-red-500 mt-1">{fieldErrors.authorName}</p>
-                                )}
                             </div>
 
                             {/* Title */}

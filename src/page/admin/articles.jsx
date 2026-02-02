@@ -5,18 +5,50 @@ import React from 'react'
 import { Search, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { Loading } from '@/common/Loading';
 import Button from '@/common/Button';
+import Toast from '@/common/Toast';
+import Dialog from '@/common/Dialog';
 import { Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function Admin() {
   const [activeTab, setActiveTab] = useState("article");
   const [blogList, setBlogList] = useState([])
   const [isLoading, setIsLoading] = useState(false)
-  console.log(blogList);
+  const [toast, setToast] = useState({ show: false, title: '', message: '' });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    const state = location.state;
+    if (state?.toast?.title) {
+      setToast({ show: true, title: state.toast.title, message: state.toast.message ?? '' });
+      window.history.replaceState({}, document.title, '/articles');
+    }
+  }, [location.state]);
 
   const handleEdit = (id) => {
     navigate(`/article/edit/${id}`)
+  }
+
+  const handleDeleteClick = (item) => {
+    setDeleteTarget(item);
+    setDialogOpen(true);
+  }
+
+  const handleDeleteConfirm = () => {
+    if (deleteTarget) {
+      setBlogList((prev) => prev.filter((b) => b.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      setDialogOpen(false);
+      setToast({ show: true, title: 'Delete article', message: 'Article has been successfully deleted.' });
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteTarget(null);
+    setDialogOpen(false);
   }
 
 
@@ -158,7 +190,7 @@ function Admin() {
                                   <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors" onClick={()=>handleEdit(item.id)}>
                                     <Pencil className="w-5 h-5" />
                                   </button>
-                                  <button className="cursor-pointer text-brown-400 hover:text-brand-red transition-colors">
+                                  <button className="cursor-pointer text-brown-400 hover:text-brand-red transition-colors" onClick={() => handleDeleteClick(item)} aria-label="Delete">
                                     <Trash2 className="w-5 h-5" />
                                   </button>
                                 </div>
@@ -195,6 +227,25 @@ function Admin() {
 
         </div>
       </main>
+
+      <Dialog
+        isOpen={dialogOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete article"
+        description="Do you want to delete this article?"
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      />
+
+      <Toast
+        type="success"
+        title={toast.title}
+        message={toast.message}
+        isVisible={toast.show}
+        onClose={() => setToast((p) => ({ ...p, show: false }))}
+        autoClose={3000}
+      />
     </div>
   );
 }

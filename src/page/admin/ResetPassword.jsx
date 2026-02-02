@@ -213,7 +213,7 @@ function AdminResetPassword() {
         onConfirm={handleConfirmReset}
         title="Reset password"
         description="Do you want to reset your password?"
-        confirmButtonText="Reset"
+        confirmButtonText="Save"
         cancelButtonText="Cancel"
       />
 

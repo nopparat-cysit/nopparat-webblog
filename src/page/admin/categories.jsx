@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
 import Dialog from "@/common/Dialog";
+import Toast from "@/common/Toast";
 import { Search, Plus, Pencil, Trash2 } from "lucide-react";
 
 const MOCK_CATEGORIES = [
@@ -18,17 +19,22 @@ function CategoriesPage() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [toast, setToast] = useState({ show: false, title: "", message: "" });
 
   useEffect(() => {
     const state = location.state;
     if (state?.newCategory) {
       setCategories((prev) => [...prev, { ...state.newCategory, id: String(Date.now()) }]);
-      window.history.replaceState({}, document.title, "/categories");
     }
     if (state?.updatedCategory) {
       setCategories((prev) =>
         prev.map((c) => (c.id === state.updatedCategory.id ? state.updatedCategory : c))
       );
+    }
+    if (state?.toast?.title) {
+      setToast({ show: true, title: state.toast.title, message: state.toast.message ?? "" });
+    }
+    if (state?.newCategory || state?.updatedCategory || state?.toast) {
       window.history.replaceState({}, document.title, "/categories");
     }
   }, [location.state]);
@@ -46,6 +52,7 @@ function CategoriesPage() {
     if (deleteTarget) {
       setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
+      setToast({ show: true, title: "Delete category", message: "Category has been successfully deleted." });
     }
     setDialogOpen(false);
   };
@@ -130,6 +137,15 @@ function CategoriesPage() {
         description="Do you want to delete this category?"
         confirmButtonText="Delete"
         cancelButtonText="Cancel"
+      />
+
+      <Toast
+        type="success"
+        title={toast.title}
+        message={toast.message}
+        isVisible={toast.show}
+        onClose={() => setToast((p) => ({ ...p, show: false }))}
+        autoClose={3000}
       />
     </div>
   );

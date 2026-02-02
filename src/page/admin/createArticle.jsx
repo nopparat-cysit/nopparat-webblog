@@ -3,6 +3,7 @@ import { Image as ImageIcon, ChevronDown } from 'lucide-react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import Button from '@/common/Button';
 import { useNavigate } from 'react-router-dom';
+import { UserMock } from '@/mockdata/userMock';
 
 const CreateArticlePage = () => {
   const fileInputRef = useRef(null);
@@ -10,7 +11,7 @@ const CreateArticlePage = () => {
   const [previewUrl, setPreviewUrl] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [category, setCategory] = useState('');
-  const [authorName, setAuthorName] = useState('');
+  const [authorName] = useState(UserMock?.name ?? '');
   const [title, setTitle] = useState('');
   const [introduction, setIntroduction] = useState('');
   const [content, setContent] = useState('');
@@ -70,7 +71,11 @@ const CreateArticlePage = () => {
     }
     const payload = getFormPayload(status);
     console.log('Submit payload:', payload);
-    navigate('/articles');
+    const toast =
+      status === 'published'
+        ? { title: 'Create article and published', message: 'Your article has been successfully published.' }
+        : { title: 'Create article and saved as draft', message: 'You can publish article later.' };
+    navigate('/articles', { state: { toast } });
     // TODO: ส่ง API เช่น POST /articles ด้วย payload + FormData ถ้ามี thumbnailFile
   };
 
@@ -162,19 +167,16 @@ const CreateArticlePage = () => {
                 )}
               </div>
 
-              {/* Author Name */}
+              {/* Author Name (locked - current user) */}
               <div className="space-y-1">
                 <label className="text-body-2 font-semibold text-brown-400">Author name</label>
                 <input
                   type="text"
                   value={authorName}
-                  onChange={(e) => { setAuthorName(e.target.value); setFieldErrors((prev) => ({ ...prev, authorName: '' })); }}
+                  readOnly
                   placeholder="Thompson P."
-                  className={`w-full h-[48px] px-4 bg-brown-100 rounded-lg focus:outline-none text-body-2 ${fieldErrors.authorName ? 'border-2 border-red-500' : 'border-none'}`}
+                  className="w-full h-[48px] px-4 bg-brown-100 rounded-lg border border-brown-200 text-brown-400 cursor-not-allowed text-body-2 focus:outline-none"
                 />
-                {fieldErrors.authorName && (
-                  <p className="text-body-3 text-red-500 mt-1">{fieldErrors.authorName}</p>
-                )}
               </div>
 
               {/* Title */}

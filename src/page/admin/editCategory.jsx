@@ -40,7 +40,10 @@ function EditCategoryPage() {
       return;
     }
     navigate("/categories", {
-      state: { updatedCategory: { id, name: name.trim() } },
+      state: {
+        updatedCategory: { id, name: name.trim() },
+        toast: { title: "Update category", message: "Category has been successfully updated." },
+      },
     });
   };
 

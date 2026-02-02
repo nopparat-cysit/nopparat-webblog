@@ -21,7 +21,12 @@ function CreateCategoryPage() {
       setFieldErrors(err);
       return;
     }
-    navigate("/categories", { state: { newCategory: { name: name.trim() } } });
+    navigate("/categories", {
+      state: {
+        newCategory: { name: name.trim() },
+        toast: { title: 'Create category', message: 'Category has been successfully created.' },
+      },
+    });
   };
 
   return (

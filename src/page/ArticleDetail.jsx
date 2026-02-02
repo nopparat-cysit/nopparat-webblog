@@ -10,6 +10,7 @@ import AuthorSidebar from "../components/AuthorSidebar";
 import LikeShareSection from "../components/LikeShareSection";
 import CommentSection from "../components/CommentSection";
 import { UserMock } from "@/mockdata/userMock";
+import NotFound from "./NotFound";
 
 function ArticleDetail() {
   const pageId = useParams();
@@ -19,13 +20,20 @@ function ArticleDetail() {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const getData = async () => {
-    const response = await axios.get(
-      `https://blog-post-project-api.vercel.app/posts/${pageId.id}`
-    );
-    setArticleDetail(response.data);
-    setLikes(response.data.likes || 0);
+    try {
+      const response = await axios.get(
+        `https://blog-post-project-api.vercel.app/posts/${pageId.id}`
+      );
+      setArticleDetail(response.data);
+      setLikes(response.data.likes || 0);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setNotFound(true);
+      }
+    }
   };
 
   useEffect(() => {
@@ -81,6 +89,10 @@ function ArticleDetail() {
 
   // Author info
   const authorImage = "https://res.cloudinary.com/dcbpjtd1r/image/upload/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
+
+  if (notFound) {
+    return <NotFound />;
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

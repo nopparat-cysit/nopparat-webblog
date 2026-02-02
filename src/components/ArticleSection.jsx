@@ -18,6 +18,7 @@ import {
 import BlogCard from "./BlogCard";
 import axios from "axios";
 import SearchDropdown from "./SearchDropdown";
+import { Loading } from "@/common/Loading";
 
 function ArticleSection() {
 

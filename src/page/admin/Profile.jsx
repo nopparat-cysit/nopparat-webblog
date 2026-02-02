@@ -49,12 +49,10 @@ function AdminProfile() {
       
         <div className='flex justify-between items-center pr-16'>
           <h1 className="text-headline-3 text-brown-600 font-semibold px-16 py-8">
-            Category Management
+            Profile
           </h1>
-          <Button variant="primary" onClick={() => navigate('/categories/create')}>
-            <div className='flex items-center gap-2'>
-              Save
-            </div>
+          <Button variant="primary" onClick={handleSave}>
+            Save
           </Button>
         </div>
         <div className="border-t border-brown-300"></div>
