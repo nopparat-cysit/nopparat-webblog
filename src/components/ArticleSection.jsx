@@ -34,13 +34,14 @@ function ArticleSection() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchResults, setSearchResults] = useState([])
   const [isFetchingContent, setIsFetchingContent] = useState(false)
-  console.log(searchResults);
+  const API = import.meta.env.VITE_API_BASE_URL;
+  console.log(blogData);
   
   
   const getData = async () => {
     if (isLoad) return;
     setIsLoad(true)
-    const response = await axios.get("https://blog-post-project-api.vercel.app/posts",
+    const response = await axios.get(`${API}/posts`,
      { params: {
         page: page,
         limit: 6,
@@ -61,7 +62,7 @@ function ArticleSection() {
 
   const getSearch = async() => {
     setIsFetchingContent(true)
-    const catagoryData = await axios.get("https://blog-post-project-api.vercel.app/posts",
+    const catagoryData = await axios.get(`${API}/posts`,
       { params: {
          keyword: searchTerm,
          limit: 100
@@ -72,23 +73,16 @@ function ArticleSection() {
   }
 
   const getCategory = async() => {
-    const catagoryData = await axios.get("https://blog-post-project-api.vercel.app/posts")
+    const catagoryData = await axios.get(`${API}/posts`)
     setDataCategory(catagoryData.data.posts)
   }
   
   
 
+  // ดึงข้อมูลใหม่ทุกครั้งที่ page หรือ selectedCategory เปลี่ยน
   useEffect(() => {
     getData();
-  }, [page]);
-
-  useEffect(() => {
-    if (page === 1) {
-      getData(); 
-    } else {
-      setPage(1);
-    }
-  }, [selectedCategory]);
+  }, [page, selectedCategory]);
 
   useEffect(() => {
     getCategory();
@@ -176,7 +170,14 @@ function ArticleSection() {
               <label className="block text-body-2 text-brown-400 font-weight-body mb-2">
                 Category
               </label>
-              <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSearchTerm(''); }}>
+              <Select
+                value={selectedCategory}
+                onValueChange={(value) => {
+                  setSelectedCategory(value);
+                  setPage(1);           // reset กลับมาหน้า 1
+                  setSearchTerm('');
+                }}
+              >
                 <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
                   style={{
                     fontFamily: "var(--font-family-sans)",
@@ -210,13 +211,20 @@ function ArticleSection() {
           <div className="hidden md:flex items-center justify-between w-full gap-4">
             {/* Category Tabs - Desktop */}
             <div className="flex items-center gap-2 rounded-[12px] bg-white p-2">
-              <Tabs defaultValue="highlight" value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSearchTerm(''); }}>
+              <Tabs
+                defaultValue="highlight"
+                value={selectedCategory}
+                onValueChange={(value) => {
+                  setSelectedCategory(value);
+                  setPage(1);           // reset กลับมาหน้า 1
+                  setSearchTerm('');
+                }}
+              >
                 <TabsList className="bg-transparent p-0 h-auto gap-2">
                   {categories.map((category) => (
                     <TabsTrigger
                       value={category.toLowerCase()}
                       key={category}
-                      onClick={() => { setSelectedCategory(category.toLowerCase()); setSearchTerm(''); }}
                       className={
                         selectedCategory === category.toLowerCase()
                           ? "bg-brown-500 text-white font-semibold shadow-md rounded-[8px]"

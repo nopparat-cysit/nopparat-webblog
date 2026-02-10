@@ -21,11 +21,14 @@ function ArticleDetail() {
   const [comments, setComments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const VITE_API_BASE = import.meta.env.VITE_API_BASE_URL
 
   const getData = async () => {
+
+    if (!pageId?.id) return;
     try {
       const response = await axios.get(
-        `https://blog-post-project-api.vercel.app/posts/${pageId.id}`
+        `${VITE_API_BASE}/posts/${pageId.id}`
       );
       setArticleDetail(response.data);
       setLikes(response.data.likes || 0);
