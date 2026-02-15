@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import { Check, Eye, EyeOff } from "lucide-react";
+import axios from "axios";
 
 function SignUpPage() {
   const navigate = useNavigate();
@@ -11,7 +12,8 @@ function SignUpPage() {
     email: "",
     password: "",
   });
-
+ console.log(formData);
+ 
   const [errors, setErrors] = useState({
     name: "",
     username: "",
@@ -28,6 +30,27 @@ function SignUpPage() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+  const SignUp = async () => {
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      };
+      await axios.post(`${apiBase}/api/signup`, payload);
+      return true;
+    } catch (error) {
+      const data = error.response?.data;
+      const message =
+        data?.error ?? data?.message ?? (data && JSON.stringify(data)) ?? error.message ?? "Unknown error";
+      alert(`Signup failed: ${message}`);
+      return false;
+    }
+  };
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -60,11 +83,8 @@ function SignUpPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    sessionStorage.setItem('userRole', 'user');
-    sessionStorage.setItem('online', true)
-    // ตรวจสอบข้อมูลทั้งหมด
     const newErrors = {
       name: validateField("name", formData.name),
       username: validateField("username", formData.username),
@@ -80,14 +100,9 @@ function SignUpPage() {
       password: true,
     });
 
-    // ตรวจสอบว่ามี error หรือไม่
     const hasErrors = Object.values(newErrors).some((error) => error !== "");
     if (!hasErrors) {
-      console.log("Form submitted:", formData);
-      // TODO: แทนที่ด้วยการเรียก API จริง
-      // จำลองการสมัครสมาชิกสำเร็จ
-      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
-      sessionStorage.setItem('userRole', 'user');
+      SignUp();
       setShowSuccess(true);
     }
   };
