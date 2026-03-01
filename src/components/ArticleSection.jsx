@@ -47,6 +47,7 @@ function ArticleSection() {
      { params: {
         page: page,
         limit: 6,
+        status_id: 2,
         category: selectedCategory === "highlight" ? "" : selectedCategory,
       }}
     );
@@ -67,7 +68,8 @@ function ArticleSection() {
     const catagoryData = await axios.get(`${API}/posts`,
       { params: {
          keyword: searchTerm,
-         limit: 100
+         limit: 100,
+         status_id: 2
        }})
        
     setSearchResults(catagoryData.data.posts)
@@ -75,8 +77,10 @@ function ArticleSection() {
   }
 
   const getCategory = async() => {
-    const catagoryData = await axios.get(`${API}/posts`)
-    setDataCategory(catagoryData.data.posts)
+    const catagoryData = await axios.get(`${API}/categories`)
+    console.log(catagoryData.data.data);
+    
+    setDataCategory(catagoryData.data.data)
   }
   
   
@@ -95,8 +99,8 @@ function ArticleSection() {
   },[searchTerm])
 
 
-  const dataCategories = dataCategory.filter(isPublished).map((n) => n.category)
-  const categories = ["Highlight", ...new Set(dataCategories)];
+
+  const categories = ["Highlight", ...dataCategory.map((n) => n.name)];
   
   const matchesCategory = (post) =>
     selectedCategory === "highlight"
