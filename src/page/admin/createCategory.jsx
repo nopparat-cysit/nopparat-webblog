@@ -7,6 +7,8 @@ function CreateCategoryPage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  console.log(name);
+  
 
   const validate = () => {
     const trimmed = name?.trim() ?? "";

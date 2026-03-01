@@ -36,6 +36,8 @@ function ArticleSection() {
   const [isFetchingContent, setIsFetchingContent] = useState(false)
   const API = import.meta.env.VITE_API_BASE_URL;
   console.log(blogData);
+
+  const isPublished = (post) => Number(post?.status_id ?? post?.status) === 2;
   
   
   const getData = async () => {
@@ -93,7 +95,7 @@ function ArticleSection() {
   },[searchTerm])
 
 
-  const dataCategories = dataCategory.map((n) => n.category)
+  const dataCategories = dataCategory.filter(isPublished).map((n) => n.category)
   const categories = ["Highlight", ...new Set(dataCategories)];
   
   const matchesCategory = (post) =>
@@ -105,14 +107,16 @@ function ArticleSection() {
     (post.title || "").toLowerCase().includes(term) 
 
   const filteredPosts = (() => {
-    return blogData.filter((post) => matchesCategory(post));
+    return blogData.filter((post) => isPublished(post) && matchesCategory(post));
   })();
 
   // Filter searchResults based on searchTerm for dropdown
   const filteredSearchResults = (() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
-    return searchResults.filter((post) => matchesSearch(post, term)).slice(0, 5);
+    return searchResults
+      .filter((post) => isPublished(post) && matchesSearch(post, term))
+      .slice(0, 5);
   })();
 
   return (

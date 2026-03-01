@@ -3,21 +3,34 @@ import { RotateCcw, User, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Button from "@/common/Button";
-import { UserMock } from "@/mockdata/userMock";
 import Dialog from "@/common/Dialog";
 import Toast from "@/common/Toast";
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=user";
 
 function profile() {
+  const { user, token, login } = useAuth();
   const location = useLocation();
-  const [activeTab, setActiveTap] = useState('profile')
-  
+  const [activeTab, setActiveTap] = useState('profile');
+
+  const [profileName, setProfileName] = useState(user?.name ?? "");
+  const [profileUsername, setProfileUsername] = useState(user?.username ?? "");
   useEffect(() => {
-    // เช็ค location state เพื่อเปิด tab reset password
+    if (user) {
+      setProfileName(user.name ?? "");
+      setProfileUsername(user.username ?? "");
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (location.state?.tab === 'reset') {
       setActiveTap('reset');
     }
   }, [location.state]);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,72 +41,100 @@ function profile() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [showProfileToast, setShowProfileToast] = useState(false);
-  
+  const [resetPasswordError, setResetPasswordError] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+
   const validatePassword = () => {
     const newErrors = {};
-    
     if (!currentPassword.trim()) {
       newErrors.currentPassword = 'Current password is required';
-    } else if (currentPassword !== UserMock.password) {
-      newErrors.currentPassword = 'Current password is incorrect';
     }
-    
     if (!newPassword.trim()) {
       newErrors.newPassword = 'New password is required';
     } else if (newPassword.length < 6) {
       newErrors.newPassword = 'New password must be at least 6 characters';
     }
-    
     if (!confirmPassword.trim()) {
       newErrors.confirmPassword = 'Please confirm your new password';
     } else if (newPassword !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
-    if (currentPassword === newPassword && newPassword.trim() && currentPassword === UserMock.password) {
+    if (currentPassword === newPassword && newPassword.trim()) {
       newErrors.newPassword = 'New password must be different from current password';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleResetPassword = (e) => {
     e.preventDefault();
+    setResetPasswordError("");
     if (validatePassword()) {
-      // Open confirmation modal
       setShowModal(true);
     }
   };
 
-  const handleConfirmReset = () => {
-    // Handle password reset logic here
-    console.log('Password reset confirmed:', { currentPassword, newPassword });
-    
-    // Update UserMock password (in real app, this would be an API call)
-    // UserMock.password = newPassword;
-    
-    // Reset form
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setErrors({});
-    setShowModal(false);
-    setShowToast(true);
-    
-  
+  const handleConfirmReset = async () => {
+    setResetPasswordError("");
+    if (!token) {
+      setResetPasswordError("Please log in again");
+      return;
+    }
+    setResetPasswordLoading(true);
+    try {
+      await axios.put(`${apiBase}/api/reset-password`, {
+        oldPassword: currentPassword,
+        newPassword,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setErrors({});
+      setShowModal(false);
+      setShowToast(true);
+    } catch (err) {
+      const msg = err.response?.data?.error ?? err.message ?? "Failed to update password";
+      setResetPasswordError(msg);
+      setShowModal(false);
+    } finally {
+      setResetPasswordLoading(false);
+    }
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    // Handle profile save logic here
-    console.log('Profile saved');
-    
-    // Show success toast
-    setShowProfileToast(true);
+    setProfileError("");
+    if (!token) {
+      setProfileError("Please log in again");
+      return;
+    }
+    const name = profileName?.trim() ?? "";
+    const username = profileUsername?.trim() ?? "";
+    if (!name || !username) {
+      setProfileError("Name and username are required");
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      const res = await axios.put(`${apiBase}/api/update-profile`, { name, username }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const updatedUser = res.data?.user;
+      if (updatedUser) {
+        login(token, { ...updatedUser, role: updatedUser.role ?? "user" });
+      }
+      setShowProfileToast(true);
+    } catch (err) {
+      const msg = err.response?.data?.error ?? err.message ?? "Failed to update profile";
+      setProfileError(msg);
+    } finally {
+      setProfileSaving(false);
+    }
   };
-  
-  console.log(activeTab);
 
   return (
     <>
@@ -131,12 +172,12 @@ function profile() {
           {/* Header - Show second on mobile */}
           <div className="flex items-center gap-3 md:gap-4 order-2 md:order-1">
             <img
-              src={UserMock.img}
+              src={user?.profilePic ?? defaultAvatar}
               alt="avatar"
               className="h-12 w-12 md:h-16 md:w-16 rounded-full"
             />
 
-            <h1 className="md:text-headline-3 text-headline-4 text-brown-400 truncate max-w-[95px] md:max-w-none">{UserMock.username}</h1>
+            <h1 className="md:text-headline-3 text-headline-4 text-brown-400 truncate max-w-[95px] md:max-w-none">{user?.username ?? "User"}</h1>
 
             <div className="h-6 md:h-8 w-[2px] bg-brown-300" />
             {activeTab === "profile" ? <h1 className="text-[20px] font-semibold md:text-headline-3">Profile</h1> : <h1 className="text-[20px] font-semibold md:text-headline-3">Reset password</h1>}
@@ -193,38 +234,28 @@ function profile() {
             <div className="w-full md:w-[550px] bg-[#EFEEEB] rounded-2xl p-6 md:p-10 flex flex-col gap-6 md:gap-10">
               {activeTab === "profile" && (
                 <>
-                  {/* Profile Header */}
+                  {/* Profile Header - รูปจาก auth user */}
                   <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                     <img
-                      src={UserMock.img}
+                      src={user?.profilePic ?? defaultAvatar}
                       alt="profile"
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover"
                     />
-
-                    <input
-                      type="file"
-                      id="profile-upload"
-                      className="hidden"
-                      onChange={(e) => console.log(e.target.files[0])}
-                    />
-
-                    <label
-                      htmlFor="profile-upload"
-                      className="cursor-pointer px-4 sm:px-6 py-2 sm:py-2.5 border border-neutral-400 rounded-full text-xs sm:text-sm font-semibold bg-white hover:bg-neutral-50 transition-all active:scale-95"
-                    >
-                      Upload profile picture
-                    </label>
                   </div>
 
                   <div className="h-px bg-neutral-300" />
 
                   {/* Form */}
                   <form onSubmit={handleSaveProfile} className="flex flex-col gap-6">
+                    {profileError && (
+                      <p className="text-red-500 text-sm">{profileError}</p>
+                    )}
                     <div className="flex flex-col gap-2">
                       <label className="text-sm text-neutral-500">Name</label>
                       <input
                         type="text"
-                        defaultValue={UserMock.name}
+                        value={profileName}
+                        onChange={(e) => { setProfileName(e.target.value); if (profileError) setProfileError(""); }}
                         className="px-4 py-3 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-400"
                       />
                     </div>
@@ -233,7 +264,8 @@ function profile() {
                       <label className="text-sm text-neutral-500">Username</label>
                       <input
                         type="text"
-                        defaultValue={UserMock.username}
+                        value={profileUsername}
+                        onChange={(e) => { setProfileUsername(e.target.value); if (profileError) setProfileError(""); }}
                         className="px-4 py-3 rounded-lg border border-neutral-300 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-400"
                       />
                     </div>
@@ -243,13 +275,16 @@ function profile() {
                       <input
                         type="email"
                         disabled
-                        defaultValue={UserMock.email}
+                        value={user?.email ?? ""}
+                        readOnly
                         className="px-4 py-3 rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed"
                       />
                     </div>
                     {/* Save Button */}
                     <div className="w-12">
-                      <Button type="submit">Save</Button>
+                      <Button type="submit" disabled={profileSaving}>
+                        {profileSaving ? "Saving..." : "Save"}
+                      </Button>
                     </div>
                   </form>
                 </>
@@ -257,6 +292,9 @@ function profile() {
 
               {activeTab === "reset" && (
                 <form onSubmit={handleResetPassword} className="flex flex-col gap-6">
+                  {resetPasswordError && (
+                    <p className="text-red-500 text-sm">{resetPasswordError}</p>
+                  )}
                   <div className="flex flex-col gap-2">
                     <label className="text-sm text-neutral-500">Current password</label>
                     <div className="relative">
@@ -266,9 +304,8 @@ function profile() {
                         value={currentPassword}
                         onChange={(e) => {
                           setCurrentPassword(e.target.value);
-                          if (errors.currentPassword) {
-                            setErrors({ ...errors, currentPassword: '' });
-                          }
+                          if (errors.currentPassword) setErrors((prev) => ({ ...prev, currentPassword: '' }));
+                          if (resetPasswordError) setResetPasswordError('');
                         }}
                         placeholder="Current password"
                         className={`w-full px-4 py-3 pr-12 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-neutral-400 ${
@@ -385,8 +422,9 @@ function profile() {
         onClose={() => setShowModal(false)}
         onConfirm={handleConfirmReset}
         title="Reset password"
-        description='Do you want to reset your password?'
-        confirmButtonText='Reset'
+        description="Do you want to reset your password?"
+        confirmButtonText={resetPasswordLoading ? "Resetting..." : "Reset"}
+        confirmDisabled={resetPasswordLoading}
       />
       <Toast
         type="success"

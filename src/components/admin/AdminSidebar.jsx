@@ -1,16 +1,19 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { FileText, Folder, User, Bell, RotateCcw, ExternalLink, LogOut } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+
 
 function AdminSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
+  const { logout } = useAuth();
+
+
 
   const handleLogout = () => {
-    sessionStorage.setItem('online', 'false');
-    sessionStorage.removeItem('userRole');
-    navigate('/login');
-    window.location.reload();
+    logout();
+    navigate("/login");
   };
 
   const menuItems = [

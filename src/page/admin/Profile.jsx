@@ -1,25 +1,29 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
 import Toast from "@/common/Toast";
-import { UserMock } from "@/mockdata/userMock";
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
+
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=user";
 
 function AdminProfile() {
-  const fileInputRef = useRef(null);
-  const [previewUrl, setPreviewUrl] = useState(UserMock.img ?? "");
-  const [name, setName] = useState(UserMock.name ?? "");
-  const [username, setUsername] = useState(UserMock.username ?? "");
-  const [email] = useState(UserMock.email ?? "");
+  const { user, token, login } = useAuth();
+  const [name, setName] = useState(user?.name ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [bio, setBio] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [showProfileToast, setShowProfileToast] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
+  useEffect(() => {
+    if (user) {
+      setName(user.name ?? "");
+      setUsername(user.username ?? "");
     }
-  };
+  }, [user]);
 
   const validate = () => {
     const err = {};
@@ -30,15 +34,37 @@ function AdminProfile() {
     return err;
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e?.preventDefault?.();
     setFieldErrors({});
+    setProfileError("");
     const err = validate();
     if (Object.keys(err).length > 0) {
       setFieldErrors(err);
       return;
     }
-    setShowProfileToast(true);
+    if (!token) {
+      setProfileError("Please log in again");
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      const res = await axios.put(
+        `${apiBase}/api/update-profile`,
+        { name: name.trim(), username: username.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const updatedUser = res.data?.user;
+      if (updatedUser) {
+        login(token, { ...updatedUser, role: updatedUser.role ?? "user" });
+      }
+      setShowProfileToast(true);
+    } catch (err) {
+      const msg = err.response?.data?.error ?? err.message ?? "Failed to update profile";
+      setProfileError(msg);
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   return (
@@ -51,42 +77,31 @@ function AdminProfile() {
           <h1 className="text-headline-3 text-brown-600 font-semibold px-16 py-8">
             Profile
           </h1>
-          <Button variant="primary" onClick={handleSave}>
-            Save
+          <Button variant="primary" onClick={handleSave} disabled={profileSaving}>
+            {profileSaving ? "Saving..." : "Save"}
           </Button>
         </div>
         <div className="border-t border-brown-300"></div>
 
         <div className="w-full mx-auto px-8 pb-[120px]">
           <div className=" rounded-xl p-10 max-w-2xl">
-            {/* Profile picture */}
+            {/* Profile picture - จาก auth user */}
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-brown-100 shrink-0 border-2 border-brown-200">
                 <img
-                  src={previewUrl}
+                  src={user?.profilePic ?? defaultAvatar}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <label
-                htmlFor="profile-upload"
-                className="cursor-pointer px-5 py-2.5 border border-brown-300 rounded-full text-body-3 font-semibold bg-white hover:bg-brown-50 transition-colors"
-              >
-                Upload profile picture
-              </label>
-              <input
-                ref={fileInputRef}
-                id="profile-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
             </div>
 
             <div className="h-px bg-brown-200 mb-8" />
 
             <form onSubmit={handleSave} className="flex flex-col gap-6">
+              {profileError && (
+                <p className="text-red-500 text-body-3">{profileError}</p>
+              )}
               <div className="space-y-1">
                 <label className="text-body-2 font-semibold text-brown-400">Name</label>
                 <input
@@ -133,7 +148,8 @@ function AdminProfile() {
                 <label className="text-body-2 font-semibold text-brown-400">Email</label>
                 <input
                   type="email"
-                  value={email}
+                  value={user?.email ?? ""}
+                  readOnly
                   disabled
                   className="w-full h-[48px] px-4 border border-brown-200 rounded-lg bg-white text-brown-400 cursor-not-allowed text-body-2"
                 />

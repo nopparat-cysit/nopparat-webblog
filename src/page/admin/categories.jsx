@@ -1,42 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
 import Dialog from "@/common/Dialog";
 import Toast from "@/common/Toast";
 import { Search, Plus, Pencil, Trash2 } from "lucide-react";
+import axios from "axios";
 
-const MOCK_CATEGORIES = [
-  { id: "1", name: "Cat" },
-  { id: "2", name: "General" },
-  { id: "3", name: "Inspiration" },
-];
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function CategoriesPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [categories, setCategories] = useState(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [toast, setToast] = useState({ show: false, title: "", message: "" });
+  const processedStateRef = useRef(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/categories`);
+        const list = Array.isArray(res.data) ? res.data : res.data?.categories ?? [];
+        setCategories(list);
+      } catch {
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const state = location.state;
-    if (state?.newCategory) {
+    const hasPayload = state?.newCategory || state?.updatedCategory || state?.toast;
+    if (!hasPayload) {
+      processedStateRef.current = null;
+      return;
+    }
+    if (processedStateRef.current === state) return;
+    processedStateRef.current = state;
+
+    if (state.newCategory) {
       setCategories((prev) => [...prev, { ...state.newCategory, id: String(Date.now()) }]);
     }
-    if (state?.updatedCategory) {
+    if (state.updatedCategory) {
       setCategories((prev) =>
         prev.map((c) => (c.id === state.updatedCategory.id ? state.updatedCategory : c))
       );
     }
-    if (state?.toast?.title) {
+    if (state.toast?.title) {
       setToast({ show: true, title: state.toast.title, message: state.toast.message ?? "" });
     }
-    if (state?.newCategory || state?.updatedCategory || state?.toast) {
-      window.history.replaceState({}, document.title, "/categories");
-    }
+    window.history.replaceState({}, document.title, "/categories");
   }, [location.state]);
 
   const filteredCategories = categories.filter((c) =>
@@ -96,7 +116,11 @@ function CategoriesPage() {
                 <span className="text-body-2 font-semibold text-brown-400">Category</span>
               </div>
               <ul className="divide-y divide-brown-100">
-                {filteredCategories.length === 0 ? (
+                {categoriesLoading ? (
+                  <li className="px-6 py-8 text-center text-body-2 text-brown-400">
+                    Loading...
+                  </li>
+                ) : filteredCategories.length === 0 ? (
                   <li className="px-6 py-8 text-center text-body-2 text-brown-400">
                     {categories.length === 0
                       ? "No categories found."

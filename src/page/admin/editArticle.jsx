@@ -1,32 +1,44 @@
-import React, { useState,useRef, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import React, { useState, useRef, useEffect } from 'react'
+import { useParams, useLocation } from 'react-router-dom'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import Button from '@/common/Button'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { Image as ImageIcon, ChevronDown } from 'lucide-react';
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function EditArticle() {
     const param = useParams();
-    const [oldData, setOldData] = useState({});
-    const [isLoading, setIsLoading] = useState(true);
+    const location = useLocation();
+    const passedArticle = location.state?.article ?? {};
+    const [oldData, setOldData] = useState(passedArticle);
+    const [isLoading, setIsLoading] = useState(!Object.keys(passedArticle).length);
+    const [categories, setCategories] = useState([]);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
-    const [previewUrl, setPreviewUrl] = useState('');
+    const [previewUrl, setPreviewUrl] = useState(passedArticle.image ?? passedArticle.Image ?? '');
     const [thumbnailFile, setThumbnailFile] = useState(null);
-    const [category, setCategory] = useState('');
-    const [authorName, setAuthorName] = useState('');
-    const [title, setTitle] = useState('');
-    const [introduction, setIntroduction] = useState('');
-    const [content, setContent] = useState('');
+    const [category, setCategory] = useState(passedArticle.category ?? '');
+    const [authorName, setAuthorName] = useState(passedArticle.author ?? '');
+    const [title, setTitle] = useState(passedArticle.title ?? '');
+    const [introduction, setIntroduction] = useState(passedArticle.description ?? '');
+    const [content, setContent] = useState(passedArticle.content ?? '');
     const [fieldErrors, setFieldErrors] = useState({});
-
+    console.log(categories);
+    
     const getData = async () => {
         if (!param.id) return;
         try {
-            const response = await axios.get(`https://blog-post-project-api.vercel.app/posts/${param.id}`);
-            setOldData(response.data);
+            const response = await axios.get(`${apiBase}/posts/${param.id}`);
+            const fromApi = response.data || {};
+            setOldData((prev) => {
+                const merged = { ...prev };
+                Object.entries(fromApi).forEach(([key, value]) => {
+                    if (value != null && value !== '') merged[key] = value;
+                });
+                return merged;
+            });
         } catch (error) {
             console.log(error);
         } finally {
@@ -38,14 +50,27 @@ function EditArticle() {
         getData();
     }, [param.id]);
 
-    // เติมค่าเก่าลงฟิลเมื่อโหลดข้อมูลเสร็จ
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await axios.get(`${apiBase}/categories`);
+                const list = Array.isArray(res.data.data) ? res.data.data : res.data.data?.categories ?? [];
+                setCategories(list);
+            } catch {
+                setCategories([]);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    // เติมค่าเก่าลงฟิลเมื่อโหลดข้อมูลเสร็จ (อัปเดตเฉพาะค่าที่มี ไม่เขียนทับด้วยค่าว่าง)
     useEffect(() => {
         if (!oldData || Object.keys(oldData).length === 0) return;
-        setTitle(oldData.title ?? '');
-        setCategory(oldData.category ?? '');
-        setAuthorName(oldData.author ?? '');
-        setIntroduction(oldData.description ?? '');
-        setContent(oldData.content ?? '');
+        if (oldData.title != null && oldData.title !== '') setTitle(oldData.title);
+        if (oldData.category != null && oldData.category !== '') setCategory(oldData.category);
+        if (oldData.author != null && oldData.author !== '') setAuthorName(oldData.author);
+        if (oldData.description != null && oldData.description !== '') setIntroduction(oldData.description);
+        if (oldData.content != null && oldData.content !== '') setContent(oldData.content);
         const img = oldData.image ?? oldData.Image ?? '';
         if (img) setPreviewUrl(img);
     }, [oldData]);
@@ -192,9 +217,11 @@ function EditArticle() {
                                         className={`w-full h-[48px] px-4 bg-white border rounded-lg appearance-none focus:outline-none text-body-2 ${fieldErrors.category ? 'border-2 border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-brown-200 focus:ring-2 focus:ring-brand-green/20'}`}
                                     >
                                         <option value="">Select category</option>
-                                        <option value="tech">Tech</option>
-                                        <option value="lifestyle">Lifestyle</option>
-                                        <option value="news">News</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat.id ?? cat.name} value={cat.name}>
+                                                {cat.name}
+                                            </option>
+                                        ))}
                                     </select>
                                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-brown-400 pointer-events-none" size={18} />
                                 </div>

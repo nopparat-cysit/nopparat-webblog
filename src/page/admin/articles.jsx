@@ -10,6 +10,18 @@ import Dialog from '@/common/Dialog';
 import { Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+// status จาก API: status_id => 1 = Draft, 2 = Published
+function getStatusDisplay(item) {
+  const rawStatus = item?.status_id ?? item?.status;
+  const s = Number(rawStatus);
+  if (s === 1) return "Draft";
+  if (s === 2) return "Published";
+  if (rawStatus === "Draft" || rawStatus === "draft") return "Draft";
+  return "Published";
+}
+
 function Admin() {
   const [activeTab, setActiveTab] = useState("article");
   const [blogList, setBlogList] = useState([])
@@ -26,7 +38,7 @@ function Admin() {
   const uniqueCategories = [...new Set(blogList.map((b) => b.category).filter(Boolean))].sort();
   const filteredBlogList = blogList.filter((item) => {
     const matchSearch = !searchQuery.trim() || (item.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
-    const matchStatus = !statusFilter || (item.status ?? "Published") === statusFilter;
+    const matchStatus = !statusFilter || getStatusDisplay(item) === statusFilter;
     const matchCategory = !categoryFilter || item.category === categoryFilter;
     return matchSearch && matchStatus && matchCategory;
   });
@@ -39,8 +51,8 @@ function Admin() {
     }
   }, [location.state]);
 
-  const handleEdit = (id) => {
-    navigate(`/article/edit/${id}`)
+  const handleEdit = (item) => {
+    navigate(`/article/edit/${item.id}`, { state: { article: item } })
   }
 
   const handleDeleteClick = (item) => {
@@ -64,22 +76,18 @@ function Admin() {
 
 
   const getData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const respone = await axios.get('https://blog-post-project-api.vercel.app/posts',
-        {
-          params: {
-            limit: 15,
-          }
-        }
-      )
-      setBlogList(respone.data.posts)
+      const response = await axios.get(`${apiBase}/posts`, {
+        params: { limit: 15 },
+      });
+      const list = response.data?.posts ?? (Array.isArray(response.data) ? response.data : []);
+      setBlogList(list);
     } catch (error) {
-      console.log(error);
-
+      setBlogList([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false)
-
   }
 
   useEffect(() => {
@@ -214,15 +222,15 @@ function Admin() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <span className={`w-2 h-2 rounded-full ${(item.status ?? "Published") === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
-                                  <span className={`font-semibold text-body-2 ${(item.status ?? "Published") === "Published" ? "text-brand-green" : "text-brown-400"}`}>
-                                    {item.status ?? "Published"}
+                                  <span className={`w-2 h-2 rounded-full ${getStatusDisplay(item) === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
+                                  <span className={`font-semibold text-body-2 ${getStatusDisplay(item) === "Published" ? "text-brand-green" : "text-brown-400"}`}>
+                                    {getStatusDisplay(item)}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-4">
-                                  <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors" onClick={()=>handleEdit(item.id)}>
+                                  <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors" onClick={() => handleEdit(item)}>
                                     <Pencil className="w-5 h-5" />
                                   </button>
                                   <button className="cursor-pointer text-brown-400 hover:text-brand-red transition-colors" onClick={() => handleDeleteClick(item)} aria-label="Delete">

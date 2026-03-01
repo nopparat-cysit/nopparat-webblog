@@ -1,14 +1,15 @@
 import { X } from "lucide-react";
 import Button from "@/common/Button";
 
-function Dialog({ 
-  isOpen, 
-  onClose, 
+function Dialog({
+  isOpen,
+  onClose,
   onConfirm,
   title = "",
   description = "",
   confirmButtonText = "Save",
-  cancelButtonText = "Cancel"
+  cancelButtonText = "Cancel",
+  confirmDisabled = false,
 }) {
   if (!isOpen) return null;
 
@@ -38,7 +39,7 @@ function Dialog({
             <Button variant="secondary" onClick={onClose}>
               {cancelButtonText}
             </Button>
-            <Button onClick={onConfirm}>
+            <Button onClick={onConfirm} disabled={confirmDisabled}>
               {confirmButtonText}
             </Button>
           </div>

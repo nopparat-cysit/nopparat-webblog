@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import { Check, Eye, EyeOff } from "lucide-react";
 import axios from "axios";
+import { Loading } from "@/common/Loading";
 
 function SignUpPage() {
   const navigate = useNavigate();
+  const [isLoading , setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -33,6 +35,19 @@ function SignUpPage() {
 
   const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
+  // เรียก API เช็ค username ซ้ำ (client-side validation ก่อน submit)
+  const checkUsernameTaken = async (username) => {
+    if (!username || !username.trim()) return false;
+    try {
+      const { data } = await axios.get(
+        `${apiBase}/api/signup/check?username=${encodeURIComponent(username.trim())}`
+      );
+      return data.usernameTaken === true;
+    } catch {
+      return false;
+    }
+  };
+
   const SignUp = async () => {
     try {
       const payload = {
@@ -42,13 +57,15 @@ function SignUpPage() {
         password: formData.password,
       };
       await axios.post(`${apiBase}/api/signup`, payload);
-      return true;
+      return { success: true };
     } catch (error) {
       const data = error.response?.data;
       const message =
         data?.error ?? data?.message ?? (data && JSON.stringify(data)) ?? error.message ?? "Unknown error";
-      alert(`Signup failed: ${message}`);
-      return false;
+      let field = null;
+      if (message.includes("username") && message.toLowerCase().includes("taken")) field = "username";
+      else if (message.includes("email") && (message.includes("exists") || message.includes("already"))) field = "email";
+      return { success: false, field, message };
     }
   };
 
@@ -81,16 +98,29 @@ function SignUpPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleUsernameBlur = async () => {
+    const u = formData.username.trim();
+    if (!u) return;
+    const taken = await checkUsernameTaken(u);
+    setErrors((prev) => ({ ...prev, username: taken ? "This username is already taken" : "" }));
+    setTouched((prev) => ({ ...prev, username: true }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = {
+    setIsLoading(true);
+    let newErrors = {
       name: validateField("name", formData.name),
       username: validateField("username", formData.username),
       email: validateField("email", formData.email),
       password: validateField("password", formData.password),
     };
+
+    const usernameTaken = await checkUsernameTaken(formData.username.trim());
+    if (usernameTaken) newErrors = { ...newErrors, username: "This username is already taken" };
 
     setErrors(newErrors);
     setTouched({
@@ -102,9 +132,15 @@ function SignUpPage() {
 
     const hasErrors = Object.values(newErrors).some((error) => error !== "");
     if (!hasErrors) {
-      SignUp();
-      setShowSuccess(true);
+      const result = await SignUp();
+      if (result.success) {
+        setShowSuccess(true);
+      } else {
+        if (result.field) setErrors((prev) => ({ ...prev, [result.field]: result.message }));
+        else alert(`Signup failed: ${result.message}`);
+      }
     }
+    setIsLoading(false);
   };
 
   const backTo = sessionStorage.getItem('prevPath') || '/';
@@ -127,8 +163,7 @@ function SignUpPage() {
   return (
     <div className="min-h-screen bg-brown-200">
       <NavBar />
-
-      <main className="flex items-center justify-center px-4 py-12 md:py-20">
+      {isLoading ? <Loading /> : <main className="flex items-center justify-center px-4 py-12 md:py-20">
         <div className="bg-brown-100 rounded-[16px] p-8 md:p-12 w-full max-w-[640px]">
           {showSuccess ? (
             // ข้อความสำเร็จ
@@ -186,6 +221,7 @@ function SignUpPage() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
+                onBlur={handleUsernameBlur}
                 placeholder="Username"
                 className={getInputClassName("username")}
               />
@@ -265,7 +301,8 @@ function SignUpPage() {
             </>
           )}
         </div>
-      </main>
+      </main>}
+      
     </div>
   );
 }

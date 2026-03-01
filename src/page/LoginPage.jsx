@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Toast from "../common/Toast";
 import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { Loading } from "@/common/Loading";
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function LoginPage() {
+  const { login, isAuthenticated } = useAuth();
+  const [isLoading , setIsLoading] = useState(false)
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -17,7 +29,6 @@ function LoginPage() {
     email: "",
     password: "",
   });
-  const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [isLoginError, setIsLoginError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +46,7 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setIsLoading(true)
     const newErrors = {
       email: formData.email.trim() ? "" : "Email is required",
       password: formData.password ? "" : "Password is required",
@@ -64,24 +75,22 @@ function LoginPage() {
         return;
       }
 
-      sessionStorage.setItem("access_token", token);
-      sessionStorage.setItem("online", "true");
-
       try {
         const userRes = await axios.get(`${apiBase}/get-user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const role = userRes.data?.role || "user";
-        sessionStorage.setItem("userRole", role);
-        if (role === "admin") {
+        const userData = userRes.data;
+        login(token, { ...userData, role: userData?.role || "user" });
+        if (userData?.role === "admin") {
           navigate("/articles");
         } else {
           navigate(backTo);
         }
       } catch {
-        sessionStorage.setItem("userRole", "user");
+        login(token, { role: "user" });
         navigate(backTo);
       }
+      setIsLoading(false)
       sessionStorage.removeItem("prevPath");
     } catch (error) {
       const message =
@@ -96,6 +105,7 @@ function LoginPage() {
       setIsLoginError(true);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 5000);
+      setIsLoading(false)
     }
   };
 
@@ -111,10 +121,10 @@ function LoginPage() {
   };
 
   return (
+    
     <div className="min-h-screen bg-brown-200">
       <NavBar />
-
-      <main className="flex items-center justify-center px-4 py-12 md:py-20">
+      {isLoading ? <Loading /> : <main className="flex items-center justify-center px-4 py-12 md:py-20">
         <div className="bg-brown-100 rounded-[16px] p-8 md:p-12 w-full max-w-[640px]">
           <h1 className="text-headline-2 text-brown-600 font-semibold text-center mb-8">
             Log in
@@ -190,7 +200,8 @@ function LoginPage() {
             </Link>
           </p>
         </div>
-      </main>
+      </main>}
+      
 
       {/* การแจ้งเตือน Toast */}
       <Toast
