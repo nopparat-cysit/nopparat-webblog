@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
 import Dialog from "@/common/Dialog";
@@ -10,7 +11,14 @@ import axios from "axios";
 const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function AdminResetPassword() {
+  const navigate = useNavigate();
   const { token } = useAuth();
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/adminlogin", { replace: true });
+    }
+  }, [token, navigate]);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,6 +66,7 @@ function AdminResetPassword() {
     if (!token) {
       setResetPasswordError("Please log in again");
       setShowModal(false);
+      navigate("/adminlogin", { replace: true });
       return;
     }
     setResetPasswordLoading(true);
@@ -74,7 +83,11 @@ function AdminResetPassword() {
       setShowModal(false);
       setShowToast(true);
     } catch (err) {
-      const msg = err.response?.data?.error ?? err.message ?? "Failed to update password";
+      const msg =
+        err.response?.data?.message ??
+        err.response?.data?.error ??
+        err.message ??
+        "Failed to update password";
       setResetPasswordError(msg);
       setShowModal(false);
     } finally {
@@ -85,6 +98,10 @@ function AdminResetPassword() {
   const inputBaseClass = "w-full px-4 py-3 pr-12 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-brand-green/20 text-body-2";
   const inputErrorClass = "border-2 border-red-500 focus:ring-red-500/20";
   const inputNormalClass = "border-brown-200";
+
+  if (!token) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-brown-100 font-sans text-brown-600">
@@ -227,7 +244,7 @@ function AdminResetPassword() {
 
       <Dialog
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => !resetPasswordLoading && setShowModal(false)}
         onConfirm={handleConfirmReset}
         title="Reset password"
         description="Do you want to reset your password?"
