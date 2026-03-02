@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
+import axios from "axios";
+
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function CreateCategoryPage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
-  console.log(name);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const trimmed = name?.trim() ?? "";
@@ -16,19 +18,30 @@ function CreateCategoryPage() {
     return {};
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setFieldErrors({});
     const err = validate();
     if (Object.keys(err).length > 0) {
       setFieldErrors(err);
       return;
     }
-    navigate("/categories", {
-      state: {
-        newCategory: { name: name.trim() },
-        toast: { title: 'Create category', message: 'Category has been successfully created.' },
-      },
-    });
+    setIsSubmitting(true);
+    try {
+      const res = await axios.post(`${apiBase}/categories`, { name: name.trim() });
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      const newCategory = list[0] ?? { name: name.trim() };
+      navigate("/categories", {
+        state: {
+          newCategory,
+          toast: { title: "Create category", message: "Category has been successfully created.", type: "success" },
+        },
+      });
+    } catch (err) {
+      const msg = err.response?.data?.message ?? "Could not create category.";
+      setFieldErrors({ name: msg });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -40,8 +53,8 @@ function CreateCategoryPage() {
           <h1 className="text-headline-3 text-brown-600 font-semibold">
             Create category
           </h1>
-          <Button variant="primary" onClick={handleSave}>
-            Save
+          <Button variant="primary" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save"}
           </Button>
         </div>
         

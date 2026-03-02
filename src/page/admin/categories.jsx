@@ -17,14 +17,14 @@ function CategoriesPage() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [toast, setToast] = useState({ show: false, title: "", message: "" });
+  const [toast, setToast] = useState({ show: false, title: "", message: "", type: "success" });
   const processedStateRef = useRef(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(`${apiBase}/categories`);
-        const list = Array.isArray(res.data) ? res.data : res.data?.categories ?? [];
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setCategories(list);
       } catch {
         setCategories([]);
@@ -46,15 +46,15 @@ function CategoriesPage() {
     processedStateRef.current = state;
 
     if (state.newCategory) {
-      setCategories((prev) => [...prev, { ...state.newCategory, id: String(Date.now()) }]);
+      setCategories((prev) => [...prev, state.newCategory]);
     }
     if (state.updatedCategory) {
       setCategories((prev) =>
-        prev.map((c) => (c.id === state.updatedCategory.id ? state.updatedCategory : c))
+        prev.map((c) => (Number(c.id) === Number(state.updatedCategory.id) ? state.updatedCategory : c))
       );
     }
     if (state.toast?.title) {
-      setToast({ show: true, title: state.toast.title, message: state.toast.message ?? "" });
+      setToast({ show: true, title: state.toast.title, message: state.toast.message ?? "", type: state.toast.type ?? "success" });
     }
     window.history.replaceState({}, document.title, "/categories");
   }, [location.state]);
@@ -68,12 +68,21 @@ function CategoriesPage() {
     setDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteTarget) {
-      setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-      setDeleteTarget(null);
-      setToast({ show: true, title: "Delete category", message: "Category has been successfully deleted." });
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) {
+      setDialogOpen(false);
+      return;
     }
+    const idToDelete = Number(deleteTarget.id);
+    try {
+      await axios.delete(`${apiBase}/categories`, { data: { id: idToDelete } });
+      setCategories((prev) => prev.filter((c) => Number(c.id) !== idToDelete));
+      setToast({ show: true, title: "Delete category", message: "Category has been successfully deleted.", type: "success" });
+    } catch (err) {
+      const msg = err.response?.data?.message ?? "Could not delete category.";
+      setToast({ show: true, title: "Delete category", message: msg, type: "error" });
+    }
+    setDeleteTarget(null);
     setDialogOpen(false);
   };
 
@@ -172,7 +181,7 @@ function CategoriesPage() {
       />
 
       <Toast
-        type="success"
+        type={toast.type ?? "success"}
         title={toast.title}
         message={toast.message}
         isVisible={toast.show}
