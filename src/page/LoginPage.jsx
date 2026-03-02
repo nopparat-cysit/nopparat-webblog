@@ -1,44 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
 import Toast from "../common/Toast";
 import { Eye, EyeOff } from "lucide-react";
-import { UserMock } from "../mockdata/userMock";
-import { AdminMock } from "@/mockdata/adminMock";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { Loading } from "@/common/Loading";
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function LoginPage() {
+  const { login, isAuthenticated } = useAuth();
+  const [isLoading , setIsLoading] = useState(false)
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  
 
   const [errors, setErrors] = useState({
     email: "",
     password: "",
   });
-  const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [isLoginError, setIsLoginError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // ล้าง error เมื่อผู้ใช้พิมพ์
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    // ล้าง login error เมื่อผู้ใช้เริ่มพิมพ์
     if (isLoginError) {
       setIsLoginError(false);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // ตรวจสอบข้อมูลเบื้องต้น
+    setIsLoading(true)
     const newErrors = {
       email: formData.email.trim() ? "" : "Email is required",
       password: formData.password ? "" : "Password is required",
@@ -46,60 +54,59 @@ function LoginPage() {
 
     setErrors(newErrors);
 
-    // ตรวจสอบว่ามี validation errors หรือไม่
     const hasValidationErrors = Object.values(newErrors).some((error) => error !== "");
-
     if (hasValidationErrors) {
       return;
     }
-    const backTo = sessionStorage.getItem('prevPath') || '/';
-    // ตรวจสอบข้อมูลล็อกอิน
-    if (formData.email.trim() === AdminMock.email && formData.password === AdminMock.password) {
-    
-      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
-      sessionStorage.setItem('userRole', 'admin');
-      sessionStorage.setItem('online', true)
-      // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
-      navigate('/adminlogin');
-      sessionStorage.removeItem('prevPath');
-      return;
-    } else if (formData.email.trim() === UserMock.email && formData.password === UserMock.password) {
- 
-      // เก็บ role ใน sessionStorage เพื่อให้ NavBar อ่านได้
-      sessionStorage.setItem('userRole', 'user');
-      sessionStorage.setItem('online', true)
-      // Login สำเร็จ - สามารถ redirect หรือทำอะไรต่อได้
-      navigate(backTo);
-      sessionStorage.removeItem('prevPath');
-      return;
+
+    const backTo = sessionStorage.getItem("prevPath") || "/";
+
+    try {
+      const { data } = await axios.post(`${apiBase}/api/login`, {
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+
+      const token = data.access_token;
+      if (!token) {
+        setIsLoginError(true);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+        return;
+      }
+
+      try {
+        const userRes = await axios.get(`${apiBase}/get-user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const userData = userRes.data;
+        login(token, { ...userData, role: userData?.role || "user" });
+        if (userData?.role === "admin") {
+          navigate("/articles");
+        } else {
+          navigate(backTo);
+        }
+      } catch {
+        login(token, { role: "user" });
+        navigate(backTo);
+      }
+      setIsLoading(false)
+      sessionStorage.removeItem("prevPath");
+    } catch (error) {
+      const message =
+        error.response?.data?.error ??
+        error.response?.data?.message ??
+        error.message ??
+        "Login failed";
+      setErrors({
+        email: "",
+        password: "",
+      });
+      setIsLoginError(true);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 5000);
+      setIsLoading(false)
     }
-
-    // ข้อมูลล็อกอินไม่ถูกต้อง
-    // รีเซ็ตข้อมูลฟอร์ม
-    setFormData({
-      email: "",
-      password: "",
-    });
-    
-    // ล้าง errors
-    setErrors({
-      email: "",
-      password: "",
-    });
-    
-    // ตั้งค่า login error เพื่อแสดงกรอบสีแดง
-    setIsLoginError(true);
-    
-    // แสดง toast notification
-    setShowToast(true);
-    
-    // ซ่อน toast อัตโนมัติหลังจาก 5 วินาที
-    setTimeout(() => {
-      setShowToast(false);
-    }, 5000);
-
-    
-    
   };
 
   const getInputClassName = (fieldName, hasRightPadding = false) => {
@@ -114,10 +121,10 @@ function LoginPage() {
   };
 
   return (
+    
     <div className="min-h-screen bg-brown-200">
       <NavBar />
-
-      <main className="flex items-center justify-center px-4 py-12 md:py-20">
+      {isLoading ? <Loading /> : <main className="flex items-center justify-center px-4 py-12 md:py-20">
         <div className="bg-brown-100 rounded-[16px] p-8 md:p-12 w-full max-w-[640px]">
           <h1 className="text-headline-2 text-brown-600 font-semibold text-center mb-8">
             Log in
@@ -193,7 +200,8 @@ function LoginPage() {
             </Link>
           </p>
         </div>
-      </main>
+      </main>}
+      
 
       {/* การแจ้งเตือน Toast */}
       <Toast

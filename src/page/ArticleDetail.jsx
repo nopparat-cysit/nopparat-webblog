@@ -21,13 +21,23 @@ function ArticleDetail() {
   const [comments, setComments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [notFound, setNotFound] = useState(false);
-
+  const VITE_API_BASE = import.meta.env.VITE_API_BASE_URL
+  console.log(articleDetail.data);
+  
   const getData = async () => {
+
+    if (!pageId?.id) return;
     try {
       const response = await axios.get(
-        `https://blog-post-project-api.vercel.app/posts/${pageId.id}`
+        `${VITE_API_BASE}/posts/${pageId.id}`
       );
-      setArticleDetail(response.data);
+      const data = response.data?.data ?? response.data;
+      const isDraft = data && (data.status === 1 || data.status === "Draft");
+      if (isDraft) {
+        setNotFound(true);
+        return;
+      }
+      setArticleDetail(data);
       setLikes(response.data.likes || 0);
     } catch (err) {
       if (err.response?.status === 404) {
