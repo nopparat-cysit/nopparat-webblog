@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { FileText, Folder, User, Bell, RotateCcw, ExternalLink, LogOut } from "lucide-react";
+import { FileText, Folder, User, RotateCcw, ExternalLink, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 
@@ -20,7 +20,6 @@ function AdminSidebar() {
     { id: "/articles", label: "Article management", icon: FileText },
     { id: "/categories", label: "Category management", icon: Folder },
     { id: "/admin/profile", label: "Profile", icon: User },
-    { id: "/notification", label: "Notification", icon: Bell },
     { id: "/admin/reset-password", label: "Reset password", icon: RotateCcw },
   ];
 

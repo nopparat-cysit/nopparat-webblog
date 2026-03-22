@@ -1,9 +1,11 @@
-function CommentSection({ 
-  comments, 
-  comment, 
-  onCommentChange, 
-  onCommentFocus, 
-  onSendComment 
+function CommentSection({
+  comments,
+  comment,
+  onCommentChange,
+  onCommentFocus,
+  onSendComment,
+  hasMoreComments = false,
+  onLoadMoreComments,
 }) {
   return (
     <div className="mt-8 md:mt-12">
@@ -57,6 +59,19 @@ function CommentSection({
           </div>
         ))}
       </div>
+
+      {/* View more */}
+      {hasMoreComments && onLoadMoreComments && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={onLoadMoreComments}
+            className="cursor-pointer px-6 py-2  text-brown-400 rounded-full text-body-2 md:text-body-1 font-medium hover:bg-brown-100 transition-all duration-300"
+          >
+            View more
+          </button>
+        </div>
+      )}
     </div>
   );
 }

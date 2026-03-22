@@ -2,9 +2,8 @@ import { FiMenu } from "react-icons/fi";
 import Button from "../common/Button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { LogOut, RotateCcw, User, Bell, ExternalLink } from "lucide-react";
+import { LogOut, RotateCcw, User, ExternalLink } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import NotificationDropdown from "./NotificationDropdown";
 
 const defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=user";
 
@@ -14,12 +13,6 @@ function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [notificationOpen, setNotificationOpen] = useState(false);
-
-  const handleNotificationOpenChange = (open) => {
-    setNotificationOpen(open);
-    if (open) setUserDropdownOpen(false);
-  };
 
   const handleNavigate = (path) => {
     sessionStorage.setItem("prevPath", location.pathname);
@@ -97,18 +90,11 @@ function NavBar() {
       : 
       (
         <>
-        {/* Desktop: Notification Bell + User dropdown */}
         <div className="hidden md:flex items-center gap-3">
-          <NotificationDropdown
-            isOpen={notificationOpen}
-            onOpenChange={handleNotificationOpenChange}
-          />
-
-          {/* User dropdown */}
           <div className="relative">
             <button
               className="flex items-center gap-2 focus:outline-none"
-              onClick={() => { setUserDropdownOpen((prev) => !prev); setNotificationOpen(false); }}
+              onClick={() => { setUserDropdownOpen((prev) => !prev); }}
             >
               <img
                 src={user?.profilePic ?? defaultAvatar}
@@ -183,18 +169,13 @@ function NavBar() {
         {listToggle && (
           <div className="absolute left-0 right-0 top-12 bg-white shadow-lg md:hidden z-50">
             {/* User info header */}
-            <div className="flex items-center justify-between px-4 py-4 border-b border-brown-200">
-              <div className="flex items-center gap-3">
-                <img
-                  src={user?.profilePic ?? defaultAvatar}
-                  alt="Avatar"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <span className="text-brown-600 font-medium">{user?.username ?? "User"}</span>
-              </div>
-              <button className="p-2 rounded-full border border-brown-200">
-                <Bell className="w-5 h-5 text-brown-400" />
-              </button>
+            <div className="flex items-center gap-3 px-4 py-4 border-b border-brown-200">
+              <img
+                src={user?.profilePic ?? defaultAvatar}
+                alt="Avatar"
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <span className="text-brown-600 font-medium">{user?.username ?? "User"}</span>
             </div>
 
             {/* Menu items */}

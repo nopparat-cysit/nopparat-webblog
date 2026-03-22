@@ -1,6 +1,6 @@
 import NavBar from "@/components/NavBar"
 import { RotateCcw, User, Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Button from "@/common/Button";
 import Dialog from "@/common/Dialog";
@@ -10,10 +10,13 @@ import axios from "axios";
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 const defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=user";
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 
 function profile() {
   const { user, token, login } = useAuth();
   const location = useLocation();
+  const avatarInputRef = useRef(null);
   const [activeTab, setActiveTap] = useState('profile');
 
   const [profileName, setProfileName] = useState(user?.name ?? "");
@@ -45,6 +48,48 @@ function profile() {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
+  const displayAvatar = avatarPreview || user?.profilePic || defaultAvatar;
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    setAvatarError("");
+    if (avatarPreview) {
+      URL.revokeObjectURL(avatarPreview);
+      setAvatarPreview("");
+    }
+    setAvatarFile(null);
+    if (!file) return;
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setAvatarError("กรุณาเลือกไฟล์รูป (JPEG, PNG, GIF, WebP)");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setAvatarError("ขนาดไฟล์เกิน 5MB");
+      e.target.value = "";
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const clearPendingAvatar = () => {
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview("");
+    setAvatarFile(null);
+    setAvatarError("");
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
+  };
 
   const validatePassword = () => {
     const newErrors = {};
@@ -120,16 +165,39 @@ function profile() {
     }
     setProfileSaving(true);
     try {
-      const res = await axios.put(`${apiBase}/api/update-profile`, { name, username }, {
+      let profilePicUrl = user?.profilePic;
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("imageFile", avatarFile);
+        const uploadRes = await axios.post(`${apiBase}/api/upload-profile-image`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        profilePicUrl = uploadRes.data?.profilePic ?? profilePicUrl;
+      }
+
+      const payload = { name, username };
+      if (profilePicUrl && profilePicUrl !== user?.profilePic) {
+        payload.profilePic = profilePicUrl;
+      }
+
+      const res = await axios.put(`${apiBase}/api/update-profile`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const updatedUser = res.data?.user;
       if (updatedUser) {
         login(token, { ...updatedUser, role: updatedUser.role ?? "user" });
       }
+      clearPendingAvatar();
       setShowProfileToast(true);
     } catch (err) {
-      const msg = err.response?.data?.error ?? err.message ?? "Failed to update profile";
+      const msg =
+        err.response?.data?.error ??
+        err.response?.data?.message ??
+        err.message ??
+        "Failed to update profile";
       setProfileError(msg);
     } finally {
       setProfileSaving(false);
@@ -172,9 +240,9 @@ function profile() {
           {/* Header - Show second on mobile */}
           <div className="flex items-center gap-3 md:gap-4 order-2 md:order-1">
             <img
-              src={user?.profilePic ?? defaultAvatar}
+              src={user?.profilePic}
               alt="avatar"
-              className="h-12 w-12 md:h-16 md:w-16 rounded-full"
+              className="h-12 w-12 md:h-16 md:w-16 rounded-full object-cover border border-brown-200"
             />
 
             <h1 className="md:text-headline-3 text-headline-4 text-brown-400 truncate max-w-[95px] md:max-w-none">{user?.username ?? "User"}</h1>
@@ -235,12 +303,37 @@ function profile() {
               {activeTab === "profile" && (
                 <>
                   {/* Profile Header - รูปจาก auth user */}
-                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                    <img
-                      src={user?.profilePic ?? defaultAvatar}
-                      alt="profile"
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover"
-                    />
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                    <div className="relative shrink-0">
+                      <img
+                        src={displayAvatar}
+                        alt="profile"
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-neutral-200"
+                      />
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept={ALLOWED_IMAGE_TYPES.join(",")}
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outlineDark"
+                          onClick={() => avatarInputRef.current?.click()}
+                          className="min-w-0! shrink-0"
+                        >
+                          Upload profile picture
+                        </Button>
+                      </div>
+                     
+                      {avatarError && (
+                        <p className="text-red-500 text-sm">{avatarError}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="h-px bg-neutral-300" />
@@ -280,9 +373,8 @@ function profile() {
                         className="px-4 py-3 rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed"
                       />
                     </div>
-                    {/* Save Button */}
-                    <div className="w-12">
-                      <Button type="submit" disabled={profileSaving}>
+                    <div className="flex justify-start">
+                      <Button type="submit" variant="dark" disabled={profileSaving}>
                         {profileSaving ? "Saving..." : "Save"}
                       </Button>
                     </div>

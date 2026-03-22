@@ -106,7 +106,6 @@ function Admin() {
             {activeTab === "article" && "Article management"}
             {activeTab === "category" && "Category management"}
             {activeTab === "profile" && "Profile"}
-            {activeTab === "notification" && "Notification"}
             {activeTab === "reset" && "Reset password"}
           </h1> */}
           {/* Artice section*/}
@@ -256,11 +255,6 @@ function Admin() {
           {/* Profile section*/}
           {activeTab === "profile" &&
             <div className="px-16 py-8">"Profile"</div>
-          }
-
-          {/* Notification section*/}
-          {activeTab === "notification" &&
-            <div className="px-16 py-8">"Notification"</div>
           }
 
           {/* Reset password section*/}
