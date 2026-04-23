@@ -10,17 +10,11 @@ import Dialog from '@/common/Dialog';
 import { Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
-// status จาก API: status_id => 1 = Draft, 2 = Published
-function getStatusDisplay(item) {
-  const rawStatus = item?.status_id ?? item?.status;
-  const s = Number(rawStatus);
-  if (s === 1) return "Draft";
-  if (s === 2) return "Published";
-  if (rawStatus === "Draft" || rawStatus === "draft") return "Draft";
-  return "Published";
-}
+/** ตรงกับ backend: status_id 2 = Published */
+const statusLabel = (post) =>
+  Number(post?.status_id) === 2 ? 'Published' : 'Draft';
 
 function Admin() {
   const [activeTab, setActiveTab] = useState("article");
@@ -35,10 +29,13 @@ function Admin() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const uniqueCategories = [...new Set(blogList.map((b) => b.category).filter(Boolean))].sort();
-  const filteredBlogList = blogList.filter((item) => {
-    const matchSearch = !searchQuery.trim() || (item.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
-    const matchStatus = !statusFilter || getStatusDisplay(item) === statusFilter;
+  const list = Array.isArray(blogList) ? blogList : [];
+  const uniqueCategories = [...new Set(list.map((b) => b.category).filter(Boolean))].sort();
+  const filteredBlogList = list.filter((item) => {
+    const matchSearch =
+      !searchQuery.trim() ||
+      (item.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
+    const matchStatus = !statusFilter || statusLabel(item) === statusFilter;
     const matchCategory = !categoryFilter || item.category === categoryFilter;
     return matchSearch && matchStatus && matchCategory;
   });
@@ -51,8 +48,8 @@ function Admin() {
     }
   }, [location.state]);
 
-  const handleEdit = (item) => {
-    navigate(`/article/edit/${item.id}`, { state: { article: item } })
+  const handleEdit = (id) => {
+    navigate(`/article/edit/${id}`)
   }
 
   const handleDeleteClick = (item) => {
@@ -60,14 +57,31 @@ function Admin() {
     setDialogOpen(true);
   }
 
-  const handleDeleteConfirm = () => {
-    if (deleteTarget) {
-      setBlogList((prev) => prev.filter((b) => b.id !== deleteTarget.id));
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await axios.delete(`${apiBase}/posts/${deleteTarget.id}`);
       setDeleteTarget(null);
       setDialogOpen(false);
-      setToast({ show: true, title: 'Delete article', message: 'Article has been successfully deleted.' });
+      setToast({
+        show: true,
+        title: "Delete article",
+        message: "Article has been successfully deleted.",
+      });
+      await getData();
+    } catch (error) {
+      setDeleteTarget(null);
+      setDialogOpen(false);
+      setToast({
+        show: true,
+        title: "ลบไม่สำเร็จ",
+        message:
+          error.response?.data?.message ??
+          error.message ??
+          "ไม่สามารถลบบทความได้",
+      });
     }
-  }
+  };
 
   const handleDeleteCancel = () => {
     setDeleteTarget(null);
@@ -78,17 +92,36 @@ function Admin() {
   const getData = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${apiBase}/posts`, {
-        params: { limit: 15 },
-      });
-      const list = response.data?.posts ?? (Array.isArray(response.data) ? response.data : []);
-      setBlogList(list);
+      const limit = 100;
+      let page = 1;
+      let allPosts = [];
+      let totalPages = 1;
+      do {
+        const response = await axios.get(`${apiBase}/posts`, {
+          params: { page, limit },
+        });
+        const posts = Array.isArray(response.data?.posts)
+          ? response.data.posts
+          : [];
+        allPosts = allPosts.concat(posts);
+        totalPages = Math.max(1, Number(response.data?.totalPages) || 1);
+        page += 1;
+      } while (page <= totalPages);
+      setBlogList(allPosts);
     } catch (error) {
+      console.error(error);
       setBlogList([]);
+      setToast({
+        show: true,
+        title: "โหลดบทความไม่สำเร็จ",
+        message:
+          error.response?.data?.message ??
+          "ตรวจสอบว่า backend ทำงานและ VITE_API_BASE_URL ใน .env ถูกต้อง",
+      });
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     getData()
@@ -106,6 +139,7 @@ function Admin() {
             {activeTab === "article" && "Article management"}
             {activeTab === "category" && "Category management"}
             {activeTab === "profile" && "Profile"}
+            {activeTab === "notification" && "Notification"}
             {activeTab === "reset" && "Reset password"}
           </h1> */}
           {/* Artice section*/}
@@ -195,7 +229,7 @@ function Admin() {
                               <Loading />
                             </td>
                           </tr>
-                        ) : blogList.length === 0 ? (
+                        ) : list.length === 0 ? (
                           <tr>
                             <td colSpan={4} className="px-6 py-8 text-center text-body-2 text-brown-400">
                               No articles found.
@@ -208,7 +242,9 @@ function Admin() {
                             </td>
                           </tr>
                         ) : (
-                          filteredBlogList.map((item, index) => (
+                          filteredBlogList.map((item, index) => {
+                            const label = statusLabel(item);
+                            return (
                             <tr
                               key={item.id}
                               className={`hover:bg-brown-100 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-brown-100/50'}`}
@@ -221,15 +257,15 @@ function Admin() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <span className={`w-2 h-2 rounded-full ${getStatusDisplay(item) === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
-                                  <span className={`font-semibold text-body-2 ${getStatusDisplay(item) === "Published" ? "text-brand-green" : "text-brown-400"}`}>
-                                    {getStatusDisplay(item)}
+                                  <span className={`w-2 h-2 rounded-full ${label === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
+                                  <span className={`font-semibold text-body-2 ${label === "Published" ? "text-brand-green" : "text-brown-400"}`}>
+                                    {label}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-4">
-                                  <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors" onClick={() => handleEdit(item)}>
+                                  <button className="cursor-pointer text-brown-400 hover:text-yellow-500 transition-colors" onClick={()=>handleEdit(item.id)}>
                                     <Pencil className="w-5 h-5" />
                                   </button>
                                   <button className="cursor-pointer text-brown-400 hover:text-brand-red transition-colors" onClick={() => handleDeleteClick(item)} aria-label="Delete">
@@ -238,7 +274,8 @@ function Admin() {
                                 </div>
                               </td>
                             </tr>
-                          ))
+                          );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -255,6 +292,11 @@ function Admin() {
           {/* Profile section*/}
           {activeTab === "profile" &&
             <div className="px-16 py-8">"Profile"</div>
+          }
+
+          {/* Notification section*/}
+          {activeTab === "notification" &&
+            <div className="px-16 py-8">"Notification"</div>
           }
 
           {/* Reset password section*/}

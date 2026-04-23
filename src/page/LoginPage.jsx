@@ -6,6 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { Loading } from "@/common/Loading";
+import { supabase } from "@/lib/supabaseClient";
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
@@ -56,6 +57,7 @@ function LoginPage() {
 
     const hasValidationErrors = Object.values(newErrors).some((error) => error !== "");
     if (hasValidationErrors) {
+      setIsLoading(false);
       return;
     }
 
@@ -68,11 +70,23 @@ function LoginPage() {
       });
 
       const token = data.access_token;
+      const refreshToken = data.refresh_token;
       if (!token) {
         setIsLoginError(true);
         setShowToast(true);
         setTimeout(() => setShowToast(false), 5000);
+        setIsLoading(false);
         return;
+      }
+
+      if (supabase && refreshToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) {
+          console.error("[supabase] setSession:", sessionError.message);
+        }
       }
 
       try {
@@ -80,14 +94,14 @@ function LoginPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const userData = userRes.data;
-        login(token, { ...userData, role: userData?.role || "user" });
+        login(token, { ...userData, role: userData?.role || "user" }, refreshToken);
         if (userData?.role === "admin") {
           navigate("/articles");
         } else {
           navigate(backTo);
         }
       } catch {
-        login(token, { role: "user" });
+        login(token, { role: "user" }, refreshToken);
         navigate(backTo);
       }
       setIsLoading(false)

@@ -1,25 +1,23 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { FileText, Folder, User, RotateCcw, ExternalLink, LogOut } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-
+import { FileText, Folder, User, Bell, RotateCcw, ExternalLink, LogOut } from "lucide-react";
 
 function AdminSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
-  const { logout } = useAuth();
-
-
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
+    sessionStorage.setItem('online', 'false');
+    sessionStorage.removeItem('userRole');
+    navigate('/login');
+    window.location.reload();
   };
 
   const menuItems = [
     { id: "/articles", label: "Article management", icon: FileText },
     { id: "/categories", label: "Category management", icon: Folder },
     { id: "/admin/profile", label: "Profile", icon: User },
+    { id: "/notification", label: "Notification", icon: Bell },
     { id: "/admin/reset-password", label: "Reset password", icon: RotateCcw },
   ];
 
@@ -61,6 +59,7 @@ function AdminSidebar() {
       {/* Bottom Section */}
       <div className="mt-auto">
         <button
+          onClick={() => navigate("/")}
           className="w-full flex items-center gap-4 px-8 py-4 text-[#6B6B6B] hover:bg-[#D9D7D2]/50 transition-all"
         >
           <ExternalLink className="w-6 h-6" />

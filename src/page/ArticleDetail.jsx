@@ -13,6 +13,17 @@ import { UserMock } from "@/mockdata/userMock";
 import NotFound from "./NotFound";
 import { useAuth } from "@/context/AuthContext";
 
+function avatarForComment(raw, authorLabel) {
+  const pic =
+    raw?.user_profile_pic ??
+    raw?.profile_pic ??
+    raw?.user?.profilePic ??
+    raw?.user?.profile_pic;
+  if (pic) return pic;
+  const seed = authorLabel || "guest";
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(String(seed))}`;
+}
+
 function ArticleDetail() {
   const pageId = useParams();
   const { user, token, isAuthenticated } = useAuth();
@@ -34,8 +45,9 @@ function ArticleDetail() {
 
   const accessToken = token ?? sessionStorage.getItem("access_token");
   const isOnline = isAuthenticated || sessionStorage.getItem("online") === "true";
-  const currentAuthorName = user?.username ?? UserMock.username;
-  const currentAuthorAvatar = user?.avatar ?? UserMock.img;
+  const currentAuthorName = user?.username ?? user?.name ?? UserMock.username;
+  const currentAuthorAvatar =
+    user?.profilePic ?? user?.profile_pic ?? UserMock.img;
 
   const formatCommentDate = (dateInput) => {
     const date = dateInput ? new Date(dateInput) : new Date();
@@ -66,14 +78,18 @@ function ArticleDetail() {
           ? res.data
           : [];
       const mapped = raw
-        .map((c) => ({
-          id: c.id,
-          author: c.user_name ?? c.user?.username ?? currentAuthorName,
-          avatar: c.user?.avatar ?? currentAuthorAvatar,
-          date: formatCommentDate(c.created_at),
-          text: c.comment_text ?? c.text ?? "",
-          created_at: c.created_at,
-        }))
+        .map((c) => {
+          const author =
+            c.user_name ?? c.user?.username ?? c.user?.name ?? "Member";
+          return {
+            id: c.id,
+            author,
+            avatar: avatarForComment(c, author),
+            date: formatCommentDate(c.created_at),
+            text: c.comment_text ?? c.text ?? "",
+            created_at: c.created_at,
+          };
+        })
         .filter((c) => c.text);
       const newestFirst = [...mapped].sort(
         (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
@@ -112,14 +128,18 @@ function ArticleDetail() {
           ? res.data
           : [];
       const mapped = raw
-        .map((c) => ({
-          id: c.id,
-          author: c.user_name ?? c.user?.username ?? currentAuthorName,
-          avatar: c.user?.avatar ?? currentAuthorAvatar,
-          date: formatCommentDate(c.created_at),
-          text: c.comment_text ?? c.text ?? "",
-          created_at: c.created_at,
-        }))
+        .map((c) => {
+          const author =
+            c.user_name ?? c.user?.username ?? c.user?.name ?? "Member";
+          return {
+            id: c.id,
+            author,
+            avatar: avatarForComment(c, author),
+            date: formatCommentDate(c.created_at),
+            text: c.comment_text ?? c.text ?? "",
+            created_at: c.created_at,
+          };
+        })
         .filter((c) => c.text);
       const newestFirst = [...mapped].sort(
         (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
@@ -266,10 +286,14 @@ function ArticleDetail() {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       const created = res.data?.data ?? res.data;
+      const author =
+        created?.user_name ??
+        created?.user?.username ??
+        currentAuthorName;
       const newComment = {
         id: created?.id ?? comments.length + 1,
-        author: created?.user?.username ?? currentAuthorName,
-        avatar: created?.user?.avatar ?? currentAuthorAvatar,
+        author,
+        avatar: avatarForComment(created, author),
         date: formatCommentDate(created?.created_at),
         text: created?.comment_text ?? trimmed,
         created_at: created?.created_at,

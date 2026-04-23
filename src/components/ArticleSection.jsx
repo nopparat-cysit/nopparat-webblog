@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
 import {
   Tabs,
@@ -38,50 +38,82 @@ function ArticleSection() {
   console.log(blogData);
 
   const isPublished = (post) => Number(post?.status_id ?? post?.status) === 2;
+
+  const handleCategoryChange = useCallback((value) => {
+    const y = window.scrollY;
+    setSelectedCategory(value);
+    setPage(1);
+    setSearchTerm("");
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, []);
   
   
   const getData = async () => {
     if (isLoad) return;
-    setIsLoad(true)
-    const response = await axios.get(`${API}/posts`,
-     { params: {
-        page: page,
-        limit: 6,
-        status_id: 2,
-        category: selectedCategory === "highlight" ? "" : selectedCategory,
-      }}
-    );
-    
-    setfilterCheck(true)
-    
-    if (page === 1) {
-      setBlogData(response.data.posts);
-    } else {
-      setBlogData((prevBlog) => [...prevBlog , ...response.data.posts]);
+    setIsLoad(true);
+    try {
+      const response = await axios.get(`${API}/posts`, {
+        params: {
+          page: page,
+          limit: 6,
+          status_id: 2,
+          category: selectedCategory === "highlight" ? "" : selectedCategory,
+        },
+      });
+      const raw = response.data?.posts ?? response.data?.data;
+      const posts = Array.isArray(raw) ? raw : [];
+      setfilterCheck(true);
+      if (page === 1) {
+        setBlogData(posts);
+      } else {
+        setBlogData((prevBlog) => [
+          ...(Array.isArray(prevBlog) ? prevBlog : []),
+          ...posts,
+        ]);
+      }
+      setTotalPage(response.data?.totalPages ?? response.data?.totalPage ?? 0);
+    } catch {
+      setfilterCheck(true);
+      if (page === 1) setBlogData([]);
+    } finally {
+      setIsLoad(false);
     }
-    setTotalPage(response.data.totalPages);
-    setIsLoad(false)
   };
 
-  const getSearch = async() => {
-    setIsFetchingContent(true)
-    const catagoryData = await axios.get(`${API}/posts`,
-      { params: {
-         keyword: searchTerm,
-         limit: 100,
-         status_id: 2
-       }})
-       
-    setSearchResults(catagoryData.data.posts)
-    setIsFetchingContent(false)
-  }
+  const getSearch = async () => {
+    setIsFetchingContent(true);
+    try {
+      const res = await axios.get(`${API}/posts`, {
+        params: {
+          keyword: searchTerm,
+          limit: 100,
+          status_id: 2,
+        },
+      });
+      const raw = res.data?.posts ?? res.data?.data;
+      setSearchResults(Array.isArray(raw) ? raw : []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsFetchingContent(false);
+    }
+  };
 
-  const getCategory = async() => {
-    const catagoryData = await axios.get(`${API}/categories`)
-    console.log(catagoryData.data.data);
-    
-    setDataCategory(catagoryData.data.data)
-  }
+  const getCategory = async () => {
+    try {
+      const res = await axios.get(`${API}/categories`);
+      const list = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data
+          ? Array.isArray(res.data.data)
+            ? res.data.data
+            : res.data.data?.categories ?? []
+          : res.data?.categories ?? [];
+      setDataCategory(Array.isArray(list) ? list : []);
+    } catch {
+      setDataCategory([]);
+    }
+  };
   
   
 
@@ -100,7 +132,8 @@ function ArticleSection() {
 
 
 
-  const categories = ["Highlight", ...dataCategory.map((n) => n.name)];
+  const categoryList = Array.isArray(dataCategory) ? dataCategory : [];
+  const categories = ["Highlight", ...categoryList.map((n) => n?.name).filter(Boolean)];
   
   const matchesCategory = (post) =>
     selectedCategory === "highlight"
@@ -110,15 +143,16 @@ function ArticleSection() {
   const matchesSearch = (post, term) =>
     (post.title || "").toLowerCase().includes(term) 
 
-  const filteredPosts = (() => {
-    return blogData.filter((post) => isPublished(post) && matchesCategory(post));
-  })();
+  const postsList = Array.isArray(blogData) ? blogData : [];
+  const filteredPosts = postsList.filter(
+    (post) => isPublished(post) && matchesCategory(post)
+  );
 
-  // Filter searchResults based on searchTerm for dropdown
+  const resultsList = Array.isArray(searchResults) ? searchResults : [];
   const filteredSearchResults = (() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
-    return searchResults
+    return resultsList
       .filter((post) => isPublished(post) && matchesSearch(post, term))
       .slice(0, 5);
   })();
@@ -180,11 +214,7 @@ function ArticleSection() {
               </label>
               <Select
                 value={selectedCategory}
-                onValueChange={(value) => {
-                  setSelectedCategory(value);
-                  setPage(1);           // reset กลับมาหน้า 1
-                  setSearchTerm('');
-                }}
+                onValueChange={handleCategoryChange}
               >
                 <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
                   style={{
@@ -222,11 +252,7 @@ function ArticleSection() {
               <Tabs
                 defaultValue="highlight"
                 value={selectedCategory}
-                onValueChange={(value) => {
-                  setSelectedCategory(value);
-                  setPage(1);           // reset กลับมาหน้า 1
-                  setSearchTerm('');
-                }}
+                onValueChange={handleCategoryChange}
               >
                 <TabsList className="bg-transparent p-0 h-auto gap-2">
                   {categories.map((category) => (
@@ -288,7 +314,7 @@ function ArticleSection() {
         </div>
 
         {/* Articles Grid - Responsive: 1 column on mobile, 2 columns on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[400px]">
           {filteredPosts.map((post, index) => (
             <div
               key={post.id}
