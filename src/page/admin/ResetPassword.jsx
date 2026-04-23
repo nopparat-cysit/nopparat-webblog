@@ -1,12 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
 import Dialog from "@/common/Dialog";
 import Toast from "@/common/Toast";
 import { Eye, EyeOff } from "lucide-react";
-import { UserMock } from "@/mockdata/userMock";
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
+
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function AdminResetPassword() {
+  const navigate = useNavigate();
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/adminlogin", { replace: true });
+    }
+  }, [token, navigate]);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,59 +28,80 @@ function AdminResetPassword() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   const validatePassword = () => {
     const newErrors = {};
-
     if (!currentPassword.trim()) {
       newErrors.currentPassword = "Current password is required";
-    } else if (currentPassword !== UserMock.password) {
-      newErrors.currentPassword = "Current password is incorrect";
     }
-
     if (!newPassword.trim()) {
       newErrors.newPassword = "New password is required";
     } else if (newPassword.length < 6) {
       newErrors.newPassword = "New password must be at least 6 characters";
     }
-
     if (!confirmPassword.trim()) {
       newErrors.confirmPassword = "Please confirm your new password";
     } else if (newPassword !== confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
-
-    if (
-      currentPassword === newPassword &&
-      newPassword.trim() &&
-      currentPassword === UserMock.password
-    ) {
+    if (currentPassword === newPassword && newPassword.trim()) {
       newErrors.newPassword = "New password must be different from current password";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleResetPassword = (e) => {
     e.preventDefault();
+    setResetPasswordError("");
     if (validatePassword()) {
       setShowModal(true);
     }
   };
 
-  const handleConfirmReset = () => {
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setErrors({});
-    setShowModal(false);
-    setShowToast(true);
+  const handleConfirmReset = async () => {
+    setResetPasswordError("");
+    if (!token) {
+      setResetPasswordError("Please log in again");
+      setShowModal(false);
+      navigate("/adminlogin", { replace: true });
+      return;
+    }
+    setResetPasswordLoading(true);
+    try {
+      await axios.put(
+        `${apiBase}/api/reset-password`,
+        { oldPassword: currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setErrors({});
+      setShowModal(false);
+      setShowToast(true);
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ??
+        err.response?.data?.error ??
+        err.message ??
+        "Failed to update password";
+      setResetPasswordError(msg);
+      setShowModal(false);
+    } finally {
+      setResetPasswordLoading(false);
+    }
   };
 
   const inputBaseClass = "w-full px-4 py-3 pr-12 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-brand-green/20 text-body-2";
   const inputErrorClass = "border-2 border-red-500 focus:ring-red-500/20";
   const inputNormalClass = "border-brown-200";
+
+  if (!token) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-brown-100 font-sans text-brown-600">
@@ -80,17 +113,18 @@ function AdminResetPassword() {
           <h1 className="text-headline-3 text-brown-600 font-semibold px-16 py-8">
             Reset password
           </h1>
-          <Button variant="primary" onClick={() => navigate('/categories/create')}>
-            <div className='flex items-center gap-2'>
-              Reset password
-            </div>
+          <Button variant="primary" type="submit" form="admin-reset-form" disabled={resetPasswordLoading}>
+            {resetPasswordLoading ? "Resetting..." : "Reset password"}
           </Button>
         </div>
         <div className="border-t border-brown-300"></div>
 
         <div className="w-full mx-auto pt-8 px-[60px] pb-[120px]">
           <div className=" rounded-xl max-w-2xl">
-            <form onSubmit={handleResetPassword} className="flex flex-col gap-6">
+            <form id="admin-reset-form" onSubmit={handleResetPassword} className="flex flex-col gap-6">
+              {resetPasswordError && (
+                <p className="text-red-500 text-body-3">{resetPasswordError}</p>
+              )}
               <div className="space-y-1">
                 <label className="text-body-2 font-semibold text-brown-400">
                   Current password
@@ -103,6 +137,7 @@ function AdminResetPassword() {
                       setCurrentPassword(e.target.value);
                       if (errors.currentPassword)
                         setErrors((prev) => ({ ...prev, currentPassword: "" }));
+                      if (resetPasswordError) setResetPasswordError("");
                     }}
                     placeholder="Current password"
                     className={`${inputBaseClass} ${errors.currentPassword ? inputErrorClass : inputNormalClass
@@ -209,11 +244,12 @@ function AdminResetPassword() {
 
       <Dialog
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => !resetPasswordLoading && setShowModal(false)}
         onConfirm={handleConfirmReset}
         title="Reset password"
         description="Do you want to reset your password?"
-        confirmButtonText="Save"
+        confirmButtonText={resetPasswordLoading ? "Resetting..." : "Reset"}
+        confirmDisabled={resetPasswordLoading}
         cancelButtonText="Cancel"
       />
 

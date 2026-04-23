@@ -10,6 +10,12 @@ import Dialog from '@/common/Dialog';
 import { Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
+/** ตรงกับ backend: status_id 2 = Published */
+const statusLabel = (post) =>
+  Number(post?.status_id) === 2 ? 'Published' : 'Draft';
+
 function Admin() {
   const [activeTab, setActiveTab] = useState("article");
   const [blogList, setBlogList] = useState([])
@@ -23,10 +29,13 @@ function Admin() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const uniqueCategories = [...new Set(blogList.map((b) => b.category).filter(Boolean))].sort();
-  const filteredBlogList = blogList.filter((item) => {
-    const matchSearch = !searchQuery.trim() || (item.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
-    const matchStatus = !statusFilter || (item.status ?? "Published") === statusFilter;
+  const list = Array.isArray(blogList) ? blogList : [];
+  const uniqueCategories = [...new Set(list.map((b) => b.category).filter(Boolean))].sort();
+  const filteredBlogList = list.filter((item) => {
+    const matchSearch =
+      !searchQuery.trim() ||
+      (item.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
+    const matchStatus = !statusFilter || statusLabel(item) === statusFilter;
     const matchCategory = !categoryFilter || item.category === categoryFilter;
     return matchSearch && matchStatus && matchCategory;
   });
@@ -48,14 +57,31 @@ function Admin() {
     setDialogOpen(true);
   }
 
-  const handleDeleteConfirm = () => {
-    if (deleteTarget) {
-      setBlogList((prev) => prev.filter((b) => b.id !== deleteTarget.id));
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await axios.delete(`${apiBase}/posts/${deleteTarget.id}`);
       setDeleteTarget(null);
       setDialogOpen(false);
-      setToast({ show: true, title: 'Delete article', message: 'Article has been successfully deleted.' });
+      setToast({
+        show: true,
+        title: "Delete article",
+        message: "Article has been successfully deleted.",
+      });
+      await getData();
+    } catch (error) {
+      setDeleteTarget(null);
+      setDialogOpen(false);
+      setToast({
+        show: true,
+        title: "ลบไม่สำเร็จ",
+        message:
+          error.response?.data?.message ??
+          error.message ??
+          "ไม่สามารถลบบทความได้",
+      });
     }
-  }
+  };
 
   const handleDeleteCancel = () => {
     setDeleteTarget(null);
@@ -64,23 +90,38 @@ function Admin() {
 
 
   const getData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const respone = await axios.get('https://blog-post-project-api.vercel.app/posts',
-        {
-          params: {
-            limit: 15,
-          }
-        }
-      )
-      setBlogList(respone.data.posts)
+      const limit = 100;
+      let page = 1;
+      let allPosts = [];
+      let totalPages = 1;
+      do {
+        const response = await axios.get(`${apiBase}/posts`, {
+          params: { page, limit },
+        });
+        const posts = Array.isArray(response.data?.posts)
+          ? response.data.posts
+          : [];
+        allPosts = allPosts.concat(posts);
+        totalPages = Math.max(1, Number(response.data?.totalPages) || 1);
+        page += 1;
+      } while (page <= totalPages);
+      setBlogList(allPosts);
     } catch (error) {
-      console.log(error);
-
+      console.error(error);
+      setBlogList([]);
+      setToast({
+        show: true,
+        title: "โหลดบทความไม่สำเร็จ",
+        message:
+          error.response?.data?.message ??
+          "ตรวจสอบว่า backend ทำงานและ VITE_API_BASE_URL ใน .env ถูกต้อง",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false)
-
-  }
+  };
 
   useEffect(() => {
     getData()
@@ -188,7 +229,7 @@ function Admin() {
                               <Loading />
                             </td>
                           </tr>
-                        ) : blogList.length === 0 ? (
+                        ) : list.length === 0 ? (
                           <tr>
                             <td colSpan={4} className="px-6 py-8 text-center text-body-2 text-brown-400">
                               No articles found.
@@ -201,7 +242,9 @@ function Admin() {
                             </td>
                           </tr>
                         ) : (
-                          filteredBlogList.map((item, index) => (
+                          filteredBlogList.map((item, index) => {
+                            const label = statusLabel(item);
+                            return (
                             <tr
                               key={item.id}
                               className={`hover:bg-brown-100 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-brown-100/50'}`}
@@ -214,9 +257,9 @@ function Admin() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <span className={`w-2 h-2 rounded-full ${(item.status ?? "Published") === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
-                                  <span className={`font-semibold text-body-2 ${(item.status ?? "Published") === "Published" ? "text-brand-green" : "text-brown-400"}`}>
-                                    {item.status ?? "Published"}
+                                  <span className={`w-2 h-2 rounded-full ${label === "Published" ? "bg-brand-green" : "bg-brown-400"}`}></span>
+                                  <span className={`font-semibold text-body-2 ${label === "Published" ? "text-brand-green" : "text-brown-400"}`}>
+                                    {label}
                                   </span>
                                 </div>
                               </td>
@@ -231,7 +274,8 @@ function Admin() {
                                 </div>
                               </td>
                             </tr>
-                          ))
+                          );
+                          })
                         )}
                       </tbody>
                     </table>

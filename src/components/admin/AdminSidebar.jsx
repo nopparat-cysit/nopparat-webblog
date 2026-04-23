@@ -59,6 +59,7 @@ function AdminSidebar() {
       {/* Bottom Section */}
       <div className="mt-auto">
         <button
+          onClick={() => navigate("/")}
           className="w-full flex items-center gap-4 px-8 py-4 text-[#6B6B6B] hover:bg-[#D9D7D2]/50 transition-all"
         >
           <ExternalLink className="w-6 h-6" />

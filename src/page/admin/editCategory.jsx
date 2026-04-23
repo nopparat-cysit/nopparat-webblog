@@ -2,12 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import Button from "@/common/Button";
+import axios from "axios";
 
-const MOCK_CATEGORIES = [
-  { id: "1", name: "Cat" },
-  { id: "2", name: "General" },
-  { id: "3", name: "Inspiration" },
-];
+const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 function EditCategoryPage() {
   const { id } = useParams();
@@ -16,15 +13,15 @@ function EditCategoryPage() {
   const [name, setName] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fromState = location.state?.category;
-    const found = fromState ?? MOCK_CATEGORIES.find((c) => c.id === id);
-    if (found) {
-      setName(found.name ?? "");
+    if (fromState) {
+      setName(fromState.name ?? "");
     }
     setIsLoading(false);
-  }, [id, location.state]);
+  }, [location.state]);
 
   const validate = () => {
     const trimmed = name?.trim() ?? "";
@@ -32,19 +29,30 @@ function EditCategoryPage() {
     return {};
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setFieldErrors({});
     const err = validate();
     if (Object.keys(err).length > 0) {
       setFieldErrors(err);
       return;
     }
-    navigate("/categories", {
-      state: {
-        updatedCategory: { id, name: name.trim() },
-        toast: { title: "Update category", message: "Category has been successfully updated." },
-      },
-    });
+    setIsSubmitting(true);
+    try {
+      const res = await axios.put(`${apiBase}/categories`, { id: Number(id), name: name.trim() });
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      const updatedCategory = list[0] ?? { id: Number(id), name: name.trim() };
+      navigate("/categories", {
+        state: {
+          updatedCategory,
+          toast: { title: "Update category", message: "Category has been successfully updated.", type: "success" },
+        },
+      });
+    } catch (err) {
+      const msg = err.response?.data?.message ?? "Could not update category.";
+      setFieldErrors({ name: msg });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -67,8 +75,8 @@ function EditCategoryPage() {
           <h1 className="text-headline-3 text-brown-600 font-semibold">
             Edit category
           </h1>
-          <Button variant="primary" onClick={handleSave}>
-            Save
+          <Button variant="primary" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save"}
           </Button>
         </div>
 

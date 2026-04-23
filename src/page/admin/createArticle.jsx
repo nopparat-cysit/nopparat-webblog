@@ -1,13 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { Image as ImageIcon, ChevronDown } from 'lucide-react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import Button from '@/common/Button';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { UserMock } from '@/mockdata/userMock';
+
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const CreateArticlePage = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [previewUrl, setPreviewUrl] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [category, setCategory] = useState('');
@@ -16,6 +23,8 @@ const CreateArticlePage = () => {
   const [introduction, setIntroduction] = useState('');
   const [content, setContent] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     return () => {
@@ -23,28 +32,48 @@ const CreateArticlePage = () => {
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/categories`);
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data
+            ? (Array.isArray(res.data.data) ? res.data.data : res.data.data?.categories ?? [])
+            : res.data?.categories ?? [];
+        setCategories(Array.isArray(list) ? list : []);
+      } catch {
+        setCategories([]);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    if (selectedFile) {
-      setThumbnailFile(selectedFile);
-      setPreviewUrl(URL.createObjectURL(selectedFile));
-      setFieldErrors((prev) => ({ ...prev, thumbnail: '' }));
-    } else {
+    if (!selectedFile) {
       setThumbnailFile(null);
       setPreviewUrl('');
+      setFieldErrors((prev) => ({ ...prev, thumbnail: '' }));
+      return;
     }
+    if (!ALLOWED_IMAGE_TYPES.includes(selectedFile.type)) {
+      setFieldErrors((prev) => ({ ...prev, thumbnail: 'กรุณาอัปโหลดไฟล์รูปภาพ (JPEG, PNG, GIF, WebP)' }));
+      setThumbnailFile(null);
+      setPreviewUrl('');
+      return;
+    }
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setFieldErrors((prev) => ({ ...prev, thumbnail: 'ขนาดไฟล์เกิน 5MB กรุณาอัปโหลดรูปที่เล็กกว่า' }));
+      setThumbnailFile(null);
+      setPreviewUrl('');
+      return;
+    }
+    setThumbnailFile(selectedFile);
+    setPreviewUrl(URL.createObjectURL(selectedFile));
+    setFieldErrors((prev) => ({ ...prev, thumbnail: '' }));
   };
-
-  const getFormPayload = (status) => ({
-    status,
-    category,
-    authorName,
-    title,
-    introduction: introduction.slice(0, 120),
-    content,
-    thumbnailFile: thumbnailFile || null,
-  });
 
   const validate = (status) => {
     const err = {};
@@ -52,31 +81,59 @@ const CreateArticlePage = () => {
     const trimmedAuthor = authorName?.trim() ?? '';
     const trimmedIntro = introduction?.trim() ?? '';
     const trimmedContent = content?.trim() ?? '';
-    const trimmedCategory = category?.trim() ?? '';
+    const hasCategory = category !== '' && category != null;
     if (!trimmedTitle) err.title = 'กรุณากรอก Title';
     if (!trimmedAuthor) err.authorName = 'กรุณากรอก Author name';
     if (!trimmedIntro) err.introduction = 'กรุณากรอก Introduction';
     if (!trimmedContent) err.content = 'กรุณากรอก Content';
-    if (!trimmedCategory) err.category = 'กรุณาเลือก Category';
-    if (!previewUrl && !thumbnailFile) err.thumbnail = 'กรุณาอัปโหลด Thumbnail image';
+    if (!hasCategory) err.category = 'กรุณาเลือก Category';
+    // Thumbnail บังคับเฉพาะเมื่อ Publish (Draft ไม่บังคับ)
+    if (status === 'published' && !previewUrl && !thumbnailFile) {
+    const token = localStorage.getItem('token');
+      err.thumbnail = 'กรุณาอัปโหลด Thumbnail image เมื่อต้องการ Publish';
+    }
     return err;
   };
 
-  const handleSave = (status) => {
+  const handleSave = async (status) => {
     setFieldErrors({});
     const err = validate(status);
     if (Object.keys(err).length > 0) {
       setFieldErrors(err);
       return;
     }
-    const payload = getFormPayload(status);
-    console.log('Submit payload:', payload);
-    const toast =
-      status === 'published'
-        ? { title: 'Create article and published', message: 'Your article has been successfully published.' }
-        : { title: 'Create article and saved as draft', message: 'You can publish article later.' };
-    navigate('/articles', { state: { toast } });
-    // TODO: ส่ง API เช่น POST /articles ด้วย payload + FormData ถ้ามี thumbnailFile
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append('title', title.trim());
+    formData.append('description', introduction.trim().slice(0, 120));
+    formData.append('content', content.trim());
+    formData.append('category_id', Number(category));
+    formData.append('status_id', status === 'published' ? 2 : 1);
+    if (thumbnailFile) formData.append('imageFile', thumbnailFile);
+
+    const headers = {
+      'Content-Type': 'multipart/form-data',
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    try {
+      await axios.post(`${apiBase}/posts`, formData, { headers });
+      const toast =
+        status === 'published'
+          ? { title: 'Create article and published', message: 'Your article has been successfully published.' }
+          : { title: 'Create article and saved as draft', message: 'You can publish article later.' };
+      navigate('/articles', { state: { toast } });
+    } catch (error) {
+      console.error('Error creating post:', error);
+      const status = error.response?.status;
+      const message =
+        status === 401
+          ? 'กรุณาเข้าสู่ระบบใหม่ (Session หมดอายุหรือยังไม่ได้เข้าสู่ระบบ)'
+          : error.response?.data?.message ?? error.message ?? 'Failed to create post. Please try again.';
+      setFieldErrors((prev) => ({ ...prev, submit: message }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -91,15 +148,18 @@ const CreateArticlePage = () => {
             Create article
           </h1>
           <div className='flex gap-4'>
-            <Button variant="secondary" onClick={() => handleSave('draft')}>
-              Save as draft
+            <Button variant="secondary" onClick={() => handleSave('draft')} disabled={isLoading}>
+              {isLoading ? 'Saving...' : 'Save as draft'}
             </Button>
-            <Button variant="primary" onClick={() => handleSave('published')}>
-              Save and publish
+            <Button variant="primary" onClick={() => handleSave('published')} disabled={isLoading}>
+              {isLoading ? 'Publishing...' : 'Save and publish'}
             </Button>
           </div>
-    
+
         </div>
+        {fieldErrors.submit && (
+          <p className="text-body-3 text-red-500 px-16 pt-2">{fieldErrors.submit}</p>
+        )}
 
 
         <div className="w-full mx-auto pt-10 px-[60px] pb-[120px]">
@@ -156,9 +216,11 @@ const CreateArticlePage = () => {
                     className={`w-full h-[48px] px-4 bg-white border rounded-lg appearance-none focus:outline-none text-body-2 ${fieldErrors.category ? 'border-2 border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-brown-200 focus:ring-2 focus:ring-brand-green/20'}`}
                   >
                     <option value="">Select category</option>
-                    <option value="tech">Tech</option>
-                    <option value="lifestyle">Lifestyle</option>
-                    <option value="news">News</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name ?? c.title ?? c.id}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-brown-400 pointer-events-none" size={18} />
                 </div>

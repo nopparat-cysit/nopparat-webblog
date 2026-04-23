@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
 import {
   Tabs,
@@ -34,61 +34,93 @@ function ArticleSection() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [searchResults, setSearchResults] = useState([])
   const [isFetchingContent, setIsFetchingContent] = useState(false)
-  console.log(searchResults);
+  const API = import.meta.env.VITE_API_BASE_URL;
+  console.log(blogData);
+
+  const isPublished = (post) => Number(post?.status_id ?? post?.status) === 2;
+
+  const handleCategoryChange = useCallback((value) => {
+    const y = window.scrollY;
+    setSelectedCategory(value);
+    setPage(1);
+    setSearchTerm("");
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, []);
   
   
   const getData = async () => {
     if (isLoad) return;
-    setIsLoad(true)
-    const response = await axios.get("https://blog-post-project-api.vercel.app/posts",
-     { params: {
-        page: page,
-        limit: 6,
-        category: selectedCategory === "highlight" ? "" : selectedCategory,
-      }}
-    );
-    
-    setfilterCheck(true)
-    
-    if (page === 1) {
-      setBlogData(response.data.posts);
-    } else {
-      setBlogData((prevBlog) => [...prevBlog , ...response.data.posts]);
+    setIsLoad(true);
+    try {
+      const response = await axios.get(`${API}/posts`, {
+        params: {
+          page: page,
+          limit: 6,
+          status_id: 2,
+          category: selectedCategory === "highlight" ? "" : selectedCategory,
+        },
+      });
+      const raw = response.data?.posts ?? response.data?.data;
+      const posts = Array.isArray(raw) ? raw : [];
+      setfilterCheck(true);
+      if (page === 1) {
+        setBlogData(posts);
+      } else {
+        setBlogData((prevBlog) => [
+          ...(Array.isArray(prevBlog) ? prevBlog : []),
+          ...posts,
+        ]);
+      }
+      setTotalPage(response.data?.totalPages ?? response.data?.totalPage ?? 0);
+    } catch {
+      setfilterCheck(true);
+      if (page === 1) setBlogData([]);
+    } finally {
+      setIsLoad(false);
     }
-    setTotalPage(response.data.totalPages);
-    setIsLoad(false)
   };
 
-  const getSearch = async() => {
-    setIsFetchingContent(true)
-    const catagoryData = await axios.get("https://blog-post-project-api.vercel.app/posts",
-      { params: {
-         keyword: searchTerm,
-         limit: 100
-       }})
-       
-    setSearchResults(catagoryData.data.posts)
-    setIsFetchingContent(false)
-  }
+  const getSearch = async () => {
+    setIsFetchingContent(true);
+    try {
+      const res = await axios.get(`${API}/posts`, {
+        params: {
+          keyword: searchTerm,
+          limit: 100,
+          status_id: 2,
+        },
+      });
+      const raw = res.data?.posts ?? res.data?.data;
+      setSearchResults(Array.isArray(raw) ? raw : []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsFetchingContent(false);
+    }
+  };
 
-  const getCategory = async() => {
-    const catagoryData = await axios.get("https://blog-post-project-api.vercel.app/posts")
-    setDataCategory(catagoryData.data.posts)
-  }
+  const getCategory = async () => {
+    try {
+      const res = await axios.get(`${API}/categories`);
+      const list = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data
+          ? Array.isArray(res.data.data)
+            ? res.data.data
+            : res.data.data?.categories ?? []
+          : res.data?.categories ?? [];
+      setDataCategory(Array.isArray(list) ? list : []);
+    } catch {
+      setDataCategory([]);
+    }
+  };
   
   
 
+  // ดึงข้อมูลใหม่ทุกครั้งที่ page หรือ selectedCategory เปลี่ยน
   useEffect(() => {
     getData();
-  }, [page]);
-
-  useEffect(() => {
-    if (page === 1) {
-      getData(); 
-    } else {
-      setPage(1);
-    }
-  }, [selectedCategory]);
+  }, [page, selectedCategory]);
 
   useEffect(() => {
     getCategory();
@@ -99,8 +131,9 @@ function ArticleSection() {
   },[searchTerm])
 
 
-  const dataCategories = dataCategory.map((n) => n.category)
-  const categories = ["Highlight", ...new Set(dataCategories)];
+
+  const categoryList = Array.isArray(dataCategory) ? dataCategory : [];
+  const categories = ["Highlight", ...categoryList.map((n) => n?.name).filter(Boolean)];
   
   const matchesCategory = (post) =>
     selectedCategory === "highlight"
@@ -110,15 +143,18 @@ function ArticleSection() {
   const matchesSearch = (post, term) =>
     (post.title || "").toLowerCase().includes(term) 
 
-  const filteredPosts = (() => {
-    return blogData.filter((post) => matchesCategory(post));
-  })();
+  const postsList = Array.isArray(blogData) ? blogData : [];
+  const filteredPosts = postsList.filter(
+    (post) => isPublished(post) && matchesCategory(post)
+  );
 
-  // Filter searchResults based on searchTerm for dropdown
+  const resultsList = Array.isArray(searchResults) ? searchResults : [];
   const filteredSearchResults = (() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
-    return searchResults.filter((post) => matchesSearch(post, term)).slice(0, 5);
+    return resultsList
+      .filter((post) => isPublished(post) && matchesSearch(post, term))
+      .slice(0, 5);
   })();
 
   return (
@@ -176,7 +212,10 @@ function ArticleSection() {
               <label className="block text-body-2 text-brown-400 font-weight-body mb-2">
                 Category
               </label>
-              <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSearchTerm(''); }}>
+              <Select
+                value={selectedCategory}
+                onValueChange={handleCategoryChange}
+              >
                 <SelectTrigger className="w-full bg-white border-0 pl-4 pr-5 py-3 rounded-[12px] text-brown-400 !text-brown-400 data-[placeholder]:text-brown-400 data-[placeholder]:!text-brown-400 font-sans font-weight-body text-body-1 leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-brown-300 transition"
                   style={{
                     fontFamily: "var(--font-family-sans)",
@@ -210,13 +249,16 @@ function ArticleSection() {
           <div className="hidden md:flex items-center justify-between w-full gap-4">
             {/* Category Tabs - Desktop */}
             <div className="flex items-center gap-2 rounded-[12px] bg-white p-2">
-              <Tabs defaultValue="highlight" value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setSearchTerm(''); }}>
+              <Tabs
+                defaultValue="highlight"
+                value={selectedCategory}
+                onValueChange={handleCategoryChange}
+              >
                 <TabsList className="bg-transparent p-0 h-auto gap-2">
                   {categories.map((category) => (
                     <TabsTrigger
                       value={category.toLowerCase()}
                       key={category}
-                      onClick={() => { setSelectedCategory(category.toLowerCase()); setSearchTerm(''); }}
                       className={
                         selectedCategory === category.toLowerCase()
                           ? "bg-brown-500 text-white font-semibold shadow-md rounded-[8px]"
@@ -272,7 +314,7 @@ function ArticleSection() {
         </div>
 
         {/* Articles Grid - Responsive: 1 column on mobile, 2 columns on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[400px]">
           {filteredPosts.map((post, index) => (
             <div
               key={post.id}
