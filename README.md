@@ -5,7 +5,7 @@
 ![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 > A personal blog web application where users can read, write, and manage blog posts — with full authentication, categories, and comment support.
 🌐 Live Demo: nopparat-webblog.vercel.app
---
+---
 ✨ Features
 📖 Browse and read blog posts with Markdown rendering
 ✍️ Create, edit, and delete your own posts
@@ -14,7 +14,7 @@
 🔐 User authentication (Sign up / Login / Reset Password)
 👤 Profile management with avatar upload
 📱 Responsive design
---
+---
 🛠️ Tech Stack
 Category	Technology
 Framework	React 19
